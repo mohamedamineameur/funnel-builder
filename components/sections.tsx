@@ -30,6 +30,7 @@ import {
   EditableText,
   InlineEditButton,
   type PageEditorPathSegment,
+  usePageInlineEditor,
 } from "@/components/page-inline-editor";
 
 function cx(...values: Array<string | false | null | undefined>) {
@@ -235,7 +236,9 @@ function ActionButton({
   labelPath?: PageEditorPathSegment[];
   label?: string;
 }) {
+  const editor = usePageInlineEditor();
   if (!cta) return null;
+  const isEditingLink = Boolean(labelPath && editor.enabled && editor.editMode);
 
   const common =
     "inline-flex min-h-11 items-center justify-center rounded-[var(--radius-button)] border px-5 py-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.14)]";
@@ -245,7 +248,23 @@ function ActionButton({
       : "border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_92%,white)] text-[var(--text)]";
 
   const buttonNode = (
-    <a className={`${common} ${tone}`} href={getActionHref(cta.action)}>
+    <a
+      className={`${common} ${tone}`}
+      href={getActionHref(cta.action)}
+      onClick={(event) => {
+        if (!isEditingLink || !labelPath) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        editor.openEditor({
+          path: labelPath,
+          label: label ?? "le texte du bouton",
+          value: cta.label,
+        });
+      }}
+    >
       {cta.label}
     </a>
   );
@@ -1353,6 +1372,7 @@ export function NavbarSection({
   variant = "classic",
   sectionIndex,
 }: NavbarProps & { variant?: string; sectionIndex?: number }) {
+  const editor = usePageInlineEditor();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const centered = variant === "centered";
@@ -1440,7 +1460,23 @@ export function NavbarSection({
           <nav className={cx("nav-links hidden lg:flex", centered && "lg:justify-self-center", editorial && "lg:gap-7", minimal && "lg:gap-5")}>
             {links.map((link, linkIndex) => (
               <span className="group/page-edit inline-flex items-center gap-2" key={`${link.href}-${link.label}-${linkIndex}`}>
-                <a className="text-sm font-medium text-[var(--text)] transition hover:text-[var(--primary)]" href={link.href}>
+                <a
+                  className="text-sm font-medium text-[var(--text)] transition hover:text-[var(--primary)]"
+                  href={link.href}
+                  onClick={(event) => {
+                    if (!editor.enabled || !editor.editMode) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                    editor.openEditor({
+                      path: sectionPath(sectionIndex, "links", linkIndex, "label"),
+                      label: `le lien ${linkIndex + 1} du menu`,
+                      value: link.label,
+                    });
+                  }}
+                >
                   {link.label}
                 </a>
                 <InlineEditButton
@@ -1508,7 +1544,24 @@ export function NavbarSection({
             <nav className="grid gap-4">
               {links.map((link, linkIndex) => (
                 <span className="group/page-edit inline-flex items-center gap-2" key={`${link.href}-${link.label}-mobile-${linkIndex}`}>
-                  <a className="text-base font-medium text-[var(--text)]" href={link.href} onClick={closeMobileMenu}>
+                  <a
+                    className="text-base font-medium text-[var(--text)]"
+                    href={link.href}
+                    onClick={(event) => {
+                      if (editor.enabled && editor.editMode) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        editor.openEditor({
+                          path: sectionPath(sectionIndex, "links", linkIndex, "label"),
+                          label: `le lien mobile ${linkIndex + 1}`,
+                          value: link.label,
+                        });
+                        return;
+                      }
+
+                      closeMobileMenu();
+                    }}
+                  >
                     {link.label}
                   </a>
                   <InlineEditButton
@@ -1531,6 +1584,7 @@ export function NavbarSection({
 }
 
 export function FooterSection({ columns, sectionIndex }: FooterProps & { sectionIndex?: number }) {
+  const editor = usePageInlineEditor();
   return (
     <Section id="footer">
       <div className="section-card p-6 md:p-8" style={{ borderRadius: "var(--radius-section)" }}>
@@ -1549,6 +1603,19 @@ export function FooterSection({ columns, sectionIndex }: FooterProps & { section
                   <a
                     className="text-[var(--text-muted)] transition hover:text-[var(--text)]"
                     href={link.href}
+                    onClick={(event) => {
+                      if (!editor.enabled || !editor.editMode) {
+                        return;
+                      }
+
+                      event.preventDefault();
+                      event.stopPropagation();
+                      editor.openEditor({
+                        path: sectionPath(sectionIndex, "columns", columnIndex, "links", linkIndex, "label"),
+                        label: `le lien ${linkIndex + 1} du footer`,
+                        value: link.label,
+                      });
+                    }}
                   >
                     {link.label}
                   </a>

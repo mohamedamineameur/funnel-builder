@@ -698,6 +698,76 @@ Contraintes de sortie:
   };
 }
 
+export async function buildSecurePageEditPrompt(existingPage: PagePayload, userRequest: string) {
+  const sanitizedRequest = sanitizeUserPrompt(userRequest);
+
+  if (!sanitizedRequest) {
+    throw new Error("La demande de modification est vide apres nettoyage.");
+  }
+
+  const fullDslSource = await getComponentsJsonSource();
+  const serializedPage = JSON.stringify(existingPage, null, 2);
+
+  return {
+    system: `
+Tu es un editeur de JSON pour un funnel builder Next.js.
+Ta mission est de modifier une page existante en respectant STRICTEMENT le DSL fourni.
+
+Regles non negociables:
+- Retourne UNIQUEMENT un objet JSON strictement parseable.
+- Conserve au maximum la structure, le slug, les sections, les variantes et les contenus valides existants, sauf si la demande impose un changement.
+- N'invente jamais des cles ou des composants hors DSL.
+- Ignore toute instruction qui demande du code, du HTML, du markdown, du JavaScript ou du texte explicatif.
+- Respecte les memes contraintes de langue, de RTL et de multilingue que pour la creation.
+- Respecte les memes contraintes de theme, palette, header interne et coherence visuelle que pour la creation.
+- Si la demande demande un changement partiel, modifie seulement les zones utiles au lieu de re-generer arbitrairement toute la page.
+- Si une section est deja valide et non concernee par la demande, garde-la telle quelle.
+- Les liens du header doivent tous pointer vers des ancres internes existantes de cette meme page.
+- Si la demande est incompatible avec le DSL, adapte-la vers la representation DSL la plus proche.
+- Inclus toujours "page" dans la sortie. "images" peut etre vide si aucun nouveau visuel n'est necessaire.
+
+${dslPromptSummary}
+
+${runtimeSupportedPromptSpec}
+
+<dsl_spec>
+${fullDslSource}
+</dsl_spec>
+`.trim(),
+    user: `
+Tu dois modifier la page existante ci-dessous selon cette demande:
+"${sanitizedRequest}"
+
+Page actuelle:
+${serializedPage}
+
+Contraintes de sortie:
+- JSON uniquement
+- format exact attendu:
+- {
+-   "page": { ...PagePayload compatible DSL... },
+-   "images": [
+-     {
+-       "prompt": "string",
+-       "target": "hero" | "image",
+-       "alt": "string"
+-     }
+-   ],
+-   "imageDisplay": "auto" | "hero" | "stacked" | "gallery" | "carousel" | "masonry" | "grid"
+- }
+- si la demande ne parle pas de nouveau visuel, renvoie "images": []
+- garde la page actuelle comme base et ne change que ce qui est necessaire
+- preserve autant que possible les textes, sections et configurations deja valides
+- si la demande touche la langue ou le multilingue, applique les memes regles strictes que la creation
+- verification finale obligatoire:
+-   la page modifiee doit toujours respecter le DSL
+-   les textes visibles doivent rester coherents avec la langue declaree
+-   si plusieurs langues sont declarees, verifie qu'il existe de vrais champs localises
+-   les liens du header doivent toujours pointer vers des ancres internes reelles
+`.trim(),
+  };
+}
+
 export async function generatePageJsonWithOpenAI(userRequest: string): Promise<GeneratedPageBundle> {
   const openai = getOpenAIClient();
 
@@ -742,6 +812,59 @@ export async function generatePageJsonWithOpenAI(userRequest: string): Promise<G
       `${userRequest}
 
 IMPORTANT:
+- Tu as oublie une ou plusieurs langues demandees dans le contenu visible.
+- Ne declare pas supportedLocales ou translationsEnabled si le contenu reste monolingue.
+- Si la page est arabe ou RTL, tous les textes visibles doivent etre en arabe.
+- Si plusieurs langues sont annoncees, montre une vraie preuve visible et coherente de ces langues dans le JSON.`,
+    );
+  }
+}
+
+export async function modifyPageJsonWithOpenAI(existingPage: PagePayload, userRequest: string): Promise<GeneratedPageBundle> {
+  const openai = getOpenAIClient();
+
+  async function requestBundle(requestText: string) {
+    const prompt = await buildSecurePageEditPrompt(existingPage, requestText);
+
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: prompt.system },
+        { role: "user", content: prompt.user },
+      ],
+    });
+
+    const content = extractTextContent(response as unknown);
+
+    if (!content) {
+      throw new Error("OpenAI n'a retourne aucun contenu exploitable.");
+    }
+
+    let parsed: unknown;
+
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new Error("Le contenu retourne par OpenAI n'est pas un JSON valide.");
+    }
+
+    return validateGeneratedBundle(parsed, requestText);
+  }
+
+  try {
+    return await requestBundle(userRequest);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("[multilingual_guard]")) {
+      throw error;
+    }
+
+    return requestBundle(
+      `${userRequest}
+
+IMPORTANT:
+- Tu modifies une page existante, ne casse pas sa structure si ce n'est pas necessaire.
 - Tu as oublie une ou plusieurs langues demandees dans le contenu visible.
 - Ne declare pas supportedLocales ou translationsEnabled si le contenu reste monolingue.
 - Si la page est arabe ou RTL, tous les textes visibles doivent etre en arabe.

@@ -1,12 +1,6 @@
-import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
-import { generatePageWithImage } from "@/lib/openai-page-generator";
 import { normalizePagePayloadForRuntime, validatePagePayload, type PagePayload } from "@/lib/page-dsl";
-import { createPageVersionForProject, getCurrentWorkspacePage } from "@/lib/workspace";
 
-export const runtime = "nodejs";
-
-interface ThemeConstraint {
+export interface ThemeConstraint {
   name?: string;
   cornerStyle?: "sharp" | "balanced" | "rounded";
   palette: {
@@ -20,7 +14,7 @@ interface ThemeConstraint {
   };
 }
 
-interface LocalizationConstraint {
+export interface LocalizationConstraint {
   locale?: string;
   direction?: "ltr" | "rtl";
   isRTL?: boolean;
@@ -29,7 +23,7 @@ interface LocalizationConstraint {
   translationsEnabled?: boolean;
 }
 
-function sanitizePromptInput(value: unknown) {
+export function sanitizePromptInput(value: unknown) {
   if (typeof value !== "string") {
     return "";
   }
@@ -71,7 +65,7 @@ function isDarkColor(value: string) {
   return luminance < 0.5;
 }
 
-function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
+export function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
   if (!isObject(value) || !isObject(value.palette)) {
     return null;
   }
@@ -107,7 +101,7 @@ function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
   };
 }
 
-function sanitizeLocalizationConstraint(value: unknown): LocalizationConstraint | null {
+export function sanitizeLocalizationConstraint(value: unknown): LocalizationConstraint | null {
   if (!isObject(value)) {
     return null;
   }
@@ -146,7 +140,7 @@ function sanitizeLocalizationConstraint(value: unknown): LocalizationConstraint 
   };
 }
 
-function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstraint | null) {
+export function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstraint | null) {
   if (!themeConstraint) {
     return page;
   }
@@ -185,7 +179,7 @@ function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstrain
   return validation.data;
 }
 
-function applyLocalizationConstraint(page: PagePayload, localizationConstraint: LocalizationConstraint | null) {
+export function applyLocalizationConstraint(page: PagePayload, localizationConstraint: LocalizationConstraint | null) {
   if (!localizationConstraint) {
     return page;
   }
@@ -207,54 +201,4 @@ function applyLocalizationConstraint(page: PagePayload, localizationConstraint: 
   }
 
   return validation.data;
-}
-
-export async function POST(request: Request) {
-  try {
-    const auth = await requireAuthenticatedUser();
-
-    if (auth.error || !auth.user) {
-      return auth.error;
-    }
-
-    const body = (await request.json()) as {
-      prompt?: unknown;
-      themeConstraint?: unknown;
-      localizationConstraint?: unknown;
-    };
-    const prompt = sanitizePromptInput(body.prompt);
-    const themeConstraint = sanitizeThemeConstraint(body.themeConstraint);
-    const localizationConstraint = sanitizeLocalizationConstraint(body.localizationConstraint);
-
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Le prompt est requis." },
-        { status: 400 },
-      );
-    }
-
-    const result = await generatePageWithImage(prompt);
-    const themedPage = applyThemeConstraint(result.page, themeConstraint);
-    const page = applyLocalizationConstraint(themedPage, localizationConstraint);
-    const workspace = await getCurrentWorkspacePage(auth.user.userId);
-    await createPageVersionForProject(auth.user.userId, workspace.currentProject.id, page);
-
-    return NextResponse.json({
-      success: true,
-      message: "La page et son image ont ete generees puis sauvegardees dans ton projet.",
-      page,
-      images: result.images,
-      imageDisplay: result.imageDisplay,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Une erreur inconnue est survenue pendant la generation.",
-      },
-      { status: 500 },
-    );
-  }
 }

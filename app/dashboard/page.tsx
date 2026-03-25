@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { loadRuntimePage } from "@/lib/load-runtime-page";
 import { DashboardVisualEditor } from "@/components/dashboard-visual-editor";
+import { WorkspacePageShell } from "@/components/workspace-page-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -20,5 +21,9 @@ export default async function DashboardPage() {
     availableImages = [];
   }
 
-  return <DashboardVisualEditor availableImages={availableImages} initialPage={runtimePage} />;
+  return (
+    <WorkspacePageShell>
+      <DashboardVisualEditor availableImages={availableImages} initialPage={runtimePage} />
+    </WorkspacePageShell>
+  );
 }

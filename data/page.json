@@ -13,25 +13,25 @@
   "theme": {
     "name": "generated_theme",
     "cornerStyle": "balanced",
-    "primaryColor": "#2563eb",
-    "secondaryColor": "#10b981",
-    "accentColor": "#f59e0b",
-    "backgroundColor": "#ffffff",
+    "primaryColor": "#6b7280",
+    "secondaryColor": "#9ca3af",
+    "accentColor": "#d1d5db",
+    "backgroundColor": "#f9fafb",
     "surfaceColor": "#ffffff",
     "surfaceAltColor": "#f3f4f6",
     "textColor": "#111827",
     "mutedTextColor": "#6b7280",
-    "borderColor": "#dbe4f0",
-    "buttonTextColor": "#ffffff",
+    "borderColor": "#d1d5db",
+    "buttonTextColor": "#111827",
     "successColor": "#15803d",
     "warningColor": "#d97706",
     "palette": {
-      "primary": "#2563eb",
-      "secondary": "#10b981",
-      "background": "#ffffff",
+      "primary": "#6b7280",
+      "secondary": "#9ca3af",
+      "background": "#f9fafb",
       "textPrimary": "#111827",
       "textSecondary": "#6b7280",
-      "accent": "#f59e0b",
+      "accent": "#d1d5db",
       "muted": "#f3f4f6"
     }
   },
@@ -83,10 +83,10 @@
         },
         "media": {
           "kind": "image",
-          "style": "max-w-md rounded-lg shadow-lg",
+          "style": "max-w-md rounded-lg shadow",
           "src": "/generated/application-mobile-landing-1-1774378138724.png"
         },
-        "tone": "professional"
+        "tone": "neutral"
       }
     },
     {
@@ -240,6 +240,10 @@
               {
                 "label": "Email",
                 "href": "mailto:support@appmobile.com"
+              },
+              {
+                "label": "amine@gmail.com",
+                "href": "mailto:amine@gmail.com"
               }
             ]
           }

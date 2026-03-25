@@ -9,10 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.2",
     "next": "15.3.0",
     "openai": "^4.104.0",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

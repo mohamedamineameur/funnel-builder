@@ -9,6 +9,7 @@ import {
   type PageSection,
 } from "@/component-registry";
 import {
+  PageInlineEditorModal,
   PageInlineEditorProvider,
   type PageEditorPathSegment,
 } from "@/components/page-inline-editor";
@@ -26,6 +27,7 @@ import {
   paletteToTheme,
   type PalettePreviewDefinition,
 } from "@/lib/palette-library";
+import { authorizedFetch } from "@/lib/client-api";
 
 type ViewportMode = "desktop" | "mobile";
 
@@ -65,6 +67,29 @@ type ImageSuggestion = {
   src: string;
   score: number;
 };
+
+type DashboardInlineField = {
+  path: PageEditorPathSegment[];
+  label: string;
+  value: string;
+  multiline?: boolean;
+};
+
+type AssistantChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  tone?: "default" | "success" | "error";
+};
+
+const ROBOT_GIF_URL = "/robot.gif";
+
+const ASSISTANT_SUGGESTIONS = [
+  "Rends l'ouverture plus premium et plus claire.",
+  "Ajoute plus de reassurance dans les avis et la FAQ.",
+  "Raccourcis le texte et rends la page plus directe.",
+  "Passe la page en anglais avec un ton plus haut de gamme.",
+];
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -535,6 +560,17 @@ function getImageCaption(src: string) {
 
 function getRepeatableCollections(section: PageSection | null): RepeatableCollectionDefinition[] {
   switch (section?.type) {
+    case "trust_bar":
+      return [
+        {
+          id: "trust-bar-items",
+          label: "Elements de confiance",
+          description: "Ajoute, retire ou reordonne les messages de reassurance.",
+          path: ["items"],
+          fields: [],
+          createItem: () => "Nouvel element de confiance",
+        },
+      ];
     case "benefits":
       return [
         {
@@ -609,6 +645,44 @@ function getRepeatableCollections(section: PageSection | null): RepeatableCollec
           }),
         },
       ];
+    case "stats":
+      return [
+        {
+          id: "stats-items",
+          label: "Statistiques",
+          description: "Gere les chiffres et leurs libelles.",
+          path: ["items"],
+          fields: [
+            { key: "label", label: "Libelle" },
+            { key: "value", label: "Valeur" },
+            { key: "progress", label: "Progression", kind: "number" },
+          ],
+          createItem: () => ({
+            label: "Nouvelle statistique",
+            value: "95%",
+            progress: 95,
+          }),
+        },
+      ];
+    case "steps":
+      return [
+        {
+          id: "steps-items",
+          label: "Etapes",
+          description: "Ajoute ou retire des etapes du parcours.",
+          path: ["items"],
+          fields: [
+            { key: "step", label: "Numero" },
+            { key: "title", label: "Titre" },
+            { key: "description", label: "Description", kind: "textarea" },
+          ],
+          createItem: () => ({
+            step: "04",
+            title: "Nouvelle etape",
+            description: "Explique ce qui se passe a cette etape.",
+          }),
+        },
+      ];
     case "form":
       return [
         {
@@ -670,6 +744,37 @@ function getRepeatableCollections(section: PageSection | null): RepeatableCollec
               },
             ],
           }),
+        },
+      ];
+    case "pricing":
+      return [
+        {
+          id: "pricing-plans",
+          label: "Offres",
+          description: "Ajoute, retire ou reordonne les offres affichees.",
+          path: ["plans"],
+          fields: [
+            { key: "name", label: "Nom" },
+            { key: "price", label: "Prix" },
+            { key: "highlight", label: "Mise en avant", kind: "switch" },
+          ],
+          createItem: () => ({
+            name: "Nouvelle offre",
+            price: "29EUR",
+            features: ["Ajoute un avantage"],
+            highlight: false,
+          }),
+        },
+      ];
+    case "logo_cloud":
+      return [
+        {
+          id: "logo-cloud-items",
+          label: "Logos",
+          description: "Ajoute ou retire les logos affiches.",
+          path: ["logos"],
+          fields: [],
+          createItem: () => "/generated/logo-a-remplacer.png",
         },
       ];
     default:
@@ -850,7 +955,7 @@ function ViewportButton({
   return (
     <button
       className={cx(
-        "inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition",
+        "inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-semibold transition",
         active
           ? "bg-slate-950 text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)]"
           : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300",
@@ -880,6 +985,154 @@ function Panel({
       <h2 className="mt-2 text-xl font-black tracking-[-0.02em] text-slate-950">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
+  );
+}
+
+function AssistantMessageBubble({ message }: { message: AssistantChatMessage }) {
+  const isUser = message.role === "user";
+  const toneClass =
+    message.tone === "error"
+      ? "border-rose-200 bg-rose-50 text-rose-800"
+      : message.tone === "success"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+        : isUser
+          ? "border-slate-900 bg-slate-900 text-white"
+          : "border-slate-200 bg-slate-50 text-slate-700";
+
+  return (
+    <div className={cx("rounded-[22px] border px-4 py-3 text-sm leading-6", toneClass)}>
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">
+        {isUser ? "Ta demande" : "Assistant"}
+      </p>
+      <p>{message.content}</p>
+    </div>
+  );
+}
+
+function AssistantChatWidget({
+  isOpen,
+  onToggle,
+  messages,
+  prompt,
+  onPromptChange,
+  onSubmit,
+  onSuggestionClick,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  messages: AssistantChatMessage[];
+  prompt: string;
+  onPromptChange: (value: string) => void;
+  onSubmit: () => void;
+  onSuggestionClick: (value: string) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="fixed bottom-5 right-5 z-[110] flex max-w-[calc(100vw-24px)] flex-col items-end gap-3">
+      {isOpen ? (
+        <div className="w-[min(420px,calc(100vw-24px))] overflow-hidden rounded-[30px] border border-white/30 bg-white/96 shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(37,99,235,0.96)_60%,rgba(56,189,248,0.9))] px-5 py-4 text-white">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">Assistant</p>
+              <h3 className="mt-1 truncate text-lg font-black">Demande une modification</h3>
+            </div>
+            <button
+              aria-label="Fermer le chat"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+              onClick={onToggle}
+              type="button"
+            >
+              <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" viewBox="0 0 24 24">
+                <path d="M6 6 18 18" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="grid gap-4 px-4 py-4">
+            <div className="max-h-[320px] space-y-3 overflow-y-auto pr-1">
+              {messages.length > 0 ? (
+                messages.map((message) => <AssistantMessageBubble key={message.id} message={message} />)
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm leading-6 text-slate-500">
+                  Dis-moi ce que tu veux changer et je retravaille la page actuelle pour toi.
+                </div>
+              )}
+              {isLoading ? (
+                <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-slate-700">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Assistant
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <img alt="Robot en attente" className="h-14 w-14 object-contain" src={ROBOT_GIF_URL} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">Le robot retravaille ta page</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">
+                        Il relit la page actuelle puis applique ta demande.
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-fuchsia-500 [animation-delay:-0.25s]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-violet-500 [animation-delay:-0.12s]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-sky-500" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {ASSISTANT_SUGGESTIONS.map((suggestion) => (
+                <button
+                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+                  key={suggestion}
+                  onClick={() => onSuggestionClick(suggestion)}
+                  type="button"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+
+            <form
+              className="grid gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSubmit();
+              }}
+            >
+              <textarea
+                className="min-h-[118px] rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white"
+                onChange={(event) => onPromptChange(event.target.value)}
+                placeholder="Exemple : rends l'ouverture plus premium, raccourcis le texte et ajoute plus de reassurance."
+                value={prompt}
+              />
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!prompt.trim() || isLoading}
+                type="submit"
+              >
+                {isLoading ? "Le robot travaille..." : "Envoyer"}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <button
+        className="inline-flex h-16 items-center gap-3 rounded-full border border-slate-950 bg-slate-950 px-5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:bg-black"
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-white/12">
+          <img alt="Robot assistant" className="h-9 w-9 rounded-full object-cover" src={ROBOT_GIF_URL} />
+        </span>
+        <span>{isOpen ? "Fermer l'assistant" : "Ouvrir l'assistant"}</span>
+      </button>
+    </div>
   );
 }
 
@@ -954,6 +1207,16 @@ export function DashboardVisualEditor({
     initialPage.sections.length > 0 ? 0 : null,
   );
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
+  const [previewActiveField, setPreviewActiveField] = useState<DashboardInlineField | null>(null);
+  const [previewSaveError, setPreviewSaveError] = useState<string | null>(null);
+  const [previewLastSavedAt, setPreviewLastSavedAt] = useState<number | null>(null);
+  const [isPreviewSaving, setIsPreviewSaving] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState("");
+  const [assistantMessages, setAssistantMessages] = useState<AssistantChatMessage[]>([]);
+  const [isAssistantLoading, setIsAssistantLoading] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
@@ -971,6 +1234,18 @@ export function DashboardVisualEditor({
   const [activeLocale, setActiveLocale] = useState(initialLocale);
   const direction = inferDirection(activeLocale, localization?.direction, localization?.isRTL);
   const hasChanges = JSON.stringify(draftPage) !== JSON.stringify(savedPage);
+  const workspaceGridClass = useMemo(() => {
+    if (leftPanelOpen && rightPanelOpen) {
+      return "xl:grid-cols-[280px_minmax(0,1fr)_360px]";
+    }
+    if (leftPanelOpen) {
+      return "xl:grid-cols-[280px_minmax(0,1fr)]";
+    }
+    if (rightPanelOpen) {
+      return "xl:grid-cols-[minmax(0,1fr)_360px]";
+    }
+    return "xl:grid-cols-[minmax(0,1fr)]";
+  }, [leftPanelOpen, rightPanelOpen]);
 
   const localizationValue: PageLocalizationContextValue = useMemo(
     () => ({
@@ -1136,6 +1411,43 @@ export function DashboardVisualEditor({
     setUploadError(null);
   }
 
+  function openPreviewEditor(field: DashboardInlineField) {
+    setPreviewSaveError(null);
+    setPreviewActiveField(field);
+    const sectionIndex = field.path.find((segment) => typeof segment === "number");
+    if (typeof sectionIndex === "number") {
+      setSelectedSectionIndex(sectionIndex);
+    }
+  }
+
+  function closePreviewEditor() {
+    if (isPreviewSaving) {
+      return;
+    }
+
+    setPreviewActiveField(null);
+    setPreviewSaveError(null);
+  }
+
+  async function savePreviewField(nextValue: string) {
+    if (!previewActiveField) {
+      return;
+    }
+
+    setIsPreviewSaving(true);
+    setPreviewSaveError(null);
+
+    try {
+      setFieldValue(previewActiveField.path, nextValue);
+      setPreviewLastSavedAt(Date.now());
+      setPreviewActiveField(null);
+    } catch (error) {
+      setPreviewSaveError(error instanceof Error ? error.message : "Impossible de mettre a jour ce contenu.");
+    } finally {
+      setIsPreviewSaving(false);
+    }
+  }
+
   function registerUploadedImage(src: string) {
     setImageLibrary((current) => [src, ...current.filter((item) => item !== src)]);
   }
@@ -1211,19 +1523,39 @@ export function DashboardVisualEditor({
   }
 
   function deleteSection(index: number) {
-    setDraftPage((current) => {
-      const nextPage = clonePage(current);
-      nextPage.sections.splice(index, 1);
-      return nextPage;
+    console.log("[dashboard] deleteSection called", {
+      index,
+      totalSections: draftPage.sections.length,
+      selectedSectionIndex,
     });
+
+    if (index < 0 || index >= draftPage.sections.length) {
+      console.warn("[dashboard] deleteSection aborted: index out of bounds", {
+        index,
+        totalSections: draftPage.sections.length,
+      });
+      return;
+    }
+
+    const nextPage = clonePage(draftPage);
+    nextPage.sections.splice(index, 1);
+    console.log("[dashboard] deleteSection applying next state", {
+      removedIndex: index,
+      nextTotalSections: nextPage.sections.length,
+      nextSectionTypes: nextPage.sections.map((section) => section.type),
+    });
+    setDraftPage(nextPage);
     setSelectedSectionIndex((current) => {
-      if (draftPage.sections.length <= 1) return null;
+      if (nextPage.sections.length === 0) return null;
       if (current === null) return null;
       if (current > index) return current - 1;
       if (current === index) return Math.max(0, index - 1);
       return current;
     });
-    setSaveMessage(null);
+    if (previewActiveField && previewActiveField.path.includes(index)) {
+      setPreviewActiveField(null);
+    }
+    setSaveMessage("Bloc retire du brouillon.");
   }
 
   function addSection(template: SectionTemplate) {
@@ -1287,7 +1619,7 @@ export function DashboardVisualEditor({
       formData.append("file", file);
       formData.append("slug", draftPage.slug);
 
-      const response = await fetch("/api/upload-image", {
+      const response = await authorizedFetch("/api/upload-image", {
         method: "POST",
         body: formData,
       });
@@ -1317,12 +1649,25 @@ export function DashboardVisualEditor({
   }
 
   function removeCollectionItem(path: PageEditorPathSegment[], index: number) {
-    setDraftPage((current) =>
-      updateArrayAtPath(current, path, (items) => {
-        items.splice(index, 1);
-      }),
-    );
-    setSaveMessage(null);
+    console.log("[dashboard] removeCollectionItem called", {
+      path,
+      index,
+    });
+    const nextPage = updateArrayAtPath(draftPage, path, (items) => {
+      console.log("[dashboard] removeCollectionItem before splice", {
+        path,
+        index,
+        currentLength: items.length,
+      });
+      items.splice(index, 1);
+      console.log("[dashboard] removeCollectionItem after splice", {
+        path,
+        index,
+        nextLength: items.length,
+      });
+    });
+    setDraftPage(nextPage);
+    setSaveMessage("Element retire du brouillon.");
   }
 
   function moveCollectionItem(path: PageEditorPathSegment[], from: number, to: number) {
@@ -1341,7 +1686,7 @@ export function DashboardVisualEditor({
     setSaveMessage(null);
 
     try {
-      const response = await fetch("/api/page", {
+      const response = await authorizedFetch("/api/page", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1364,40 +1709,160 @@ export function DashboardVisualEditor({
     }
   }
 
+  function appendAssistantMessage(message: AssistantChatMessage) {
+    setAssistantMessages((current) => [...current, message]);
+  }
+
+  function applyAssistantPage(nextPage: RuntimePagePayload) {
+    setDraftPage(nextPage);
+    setSavedPage(nextPage);
+    setSelectedSectionIndex(nextPage.sections.length > 0 ? 0 : null);
+    setActiveLocale(nextPage.localization?.locale ?? nextPage.localization?.supportedLocales?.[0] ?? "fr");
+  }
+
+  async function submitAssistantPrompt() {
+    const prompt = assistantPrompt.trim();
+
+    if (!prompt || isAssistantLoading) {
+      return;
+    }
+
+    const userMessage: AssistantChatMessage = {
+      id: `${Date.now()}-user`,
+      role: "user",
+      content: prompt,
+    };
+
+    appendAssistantMessage(userMessage);
+    setAssistantPrompt("");
+    setIsAssistantLoading(true);
+    setIsAssistantOpen(true);
+
+    try {
+      const response = await authorizedFetch("/api/modify-page", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          page: draftPage,
+          save: true,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        page?: RuntimePagePayload;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.page) {
+        throw new Error(payload.error ?? "Impossible d'appliquer cette demande.");
+      }
+
+      applyAssistantPage(payload.page);
+      setSaveMessage("La page a ete mise a jour par l'assistant.");
+      appendAssistantMessage({
+        id: `${Date.now()}-assistant`,
+        role: "assistant",
+        content: "C'est pret. J'ai applique ta demande sur la page et mis a jour le rendu.",
+        tone: "success",
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Une erreur est survenue pendant la modification.";
+      appendAssistantMessage({
+        id: `${Date.now()}-assistant-error`,
+        role: "assistant",
+        content: message,
+        tone: "error",
+      });
+    } finally {
+      setIsAssistantLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef4ff_100%)] px-3 py-3 md:px-4 md:py-4 xl:px-5">
       <div className="mx-auto flex w-full max-w-[1820px] flex-col gap-4">
-        <header className="sticky top-3 z-40 rounded-[30px] border border-white/70 bg-white/88 px-4 py-4 shadow-[0_18px_50px_rgba(15,23,42,0.1)] backdrop-blur md:px-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <header className="sticky top-3 z-40 rounded-[26px] border border-white/70 bg-white/90 px-3 py-3 shadow-[0_14px_36px_rgba(15,23,42,0.08)] backdrop-blur md:px-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">Editeur visuel</p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <h1 className="truncate text-2xl font-black tracking-[-0.03em] text-slate-950 md:text-3xl">
-                  {typeof previewPage.title === "string" ? previewPage.title : "Page sans titre"}
-                </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-700">Editeur visuel</p>
                 <span
                   className={cx(
-                    "rounded-full px-3 py-1 text-xs font-semibold",
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold",
                     hasChanges ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700",
                   )}
                 >
-                  {hasChanges ? "Changements non enregistres" : "Tout est a jour"}
+                  {hasChanges ? "A enregistrer" : "Tout est a jour"}
                 </span>
+                {saveMessage ? (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                    {saveMessage}
+                  </span>
+                ) : null}
               </div>
-              <p className="mt-2 text-sm text-slate-500">
-                Selectionne un bloc, ajuste son contenu a droite, puis enregistre quand tout te convient.
-              </p>
+              <h1 className="mt-1 truncate text-xl font-black tracking-[-0.03em] text-slate-950 md:text-2xl">
+                {typeof previewPage.title === "string" ? previewPage.title : "Page sans titre"}
+              </h1>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <ViewportButton active={viewport === "desktop"} onClick={() => setViewport("desktop")}>
-                Ordinateur
-              </ViewportButton>
-              <ViewportButton active={viewport === "mobile"} onClick={() => setViewport("mobile")}>
-                Telephone
-              </ViewportButton>
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 p-1">
+                <ViewportButton active={viewport === "desktop"} onClick={() => setViewport("desktop")}>
+                  Ordinateur
+                </ViewportButton>
+                <ViewportButton active={viewport === "mobile"} onClick={() => setViewport("mobile")}>
+                  Telephone
+                </ViewportButton>
+              </div>
               <button
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+                className={cx(
+                  "inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-semibold transition",
+                  leftPanelOpen
+                    ? "bg-slate-950 text-white"
+                    : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+                )}
+                onClick={() => setLeftPanelOpen((current) => !current)}
+                type="button"
+              >
+                Blocs
+              </button>
+              <button
+                className={cx(
+                  "inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-semibold transition",
+                  rightPanelOpen
+                    ? "bg-slate-950 text-white"
+                    : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300",
+                )}
+                onClick={() => setRightPanelOpen((current) => !current)}
+                type="button"
+              >
+                Reglages
+              </button>
+              <button
+                className="inline-flex h-9 items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                onClick={() => {
+                  setLeftPanelOpen(false);
+                  setRightPanelOpen(false);
+                }}
+                type="button"
+              >
+                Apercu
+              </button>
+              <button
+                className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+                onClick={() => {
+                  setLeftPanelOpen(true);
+                  setRightPanelOpen(true);
+                }}
+                type="button"
+              >
+                Tout
+              </button>
+              <button
+                className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
                 onClick={() => {
                   setDraftPage(savedPage);
                   setSaveMessage("Retour a la derniere version enregistree.");
@@ -1407,7 +1872,7 @@ export function DashboardVisualEditor({
                 Revenir
               </button>
               <button
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-5 text-sm font-semibold !text-white shadow-[0_16px_34px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-black hover:!text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-9 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold !text-white shadow-[0_12px_24px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-black hover:!text-white disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isSaving || !hasChanges}
                 onClick={saveChanges}
                 type="button"
@@ -1415,25 +1880,25 @@ export function DashboardVisualEditor({
                 {isSaving ? "Enregistrement..." : "Enregistrer"}
               </button>
               <Link
-                className="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 transition hover:bg-white"
                 href="/"
                 target="_blank"
               >
-                Ouvrir la page
+                Voir la page
               </Link>
               <Link
-                className="inline-flex h-11 items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                className="inline-flex h-9 items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
                 href="/prompt"
               >
                 Nouvelle page
               </Link>
             </div>
           </div>
-          {saveMessage ? <p className="mt-3 text-sm text-slate-600">{saveMessage}</p> : null}
         </header>
 
-        <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
-          <aside className="grid gap-4 self-start xl:sticky xl:top-[124px]">
+        <div className={cx("grid gap-4", workspaceGridClass)}>
+          {leftPanelOpen ? (
+          <aside className="grid max-h-[calc(100vh-150px)] gap-4 self-start overflow-auto xl:sticky xl:top-[124px]">
             <Panel eyebrow="Structure" title="Blocs de la page">
               <button
                 className="inline-flex h-12 w-full items-center justify-center rounded-[20px] border border-slate-950 bg-slate-950 px-4 text-sm font-semibold !text-white shadow-[0_16px_32px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-black hover:!text-white"
@@ -1593,20 +2058,17 @@ export function DashboardVisualEditor({
               </div>
             </Panel>
           </aside>
+          ) : null}
 
-          <section className="min-w-0">
-            <Panel eyebrow="Apercu interactif" title="Page en cours" className="h-full overflow-hidden">
-              <div className="max-h-[calc(100vh-180px)] overflow-auto rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff_0%,#e2e8f0_100%)] p-3 md:p-5">
+          <section className="min-w-0 rounded-[28px] border border-slate-200 bg-white p-3 shadow-sm md:p-4">
+              <div className="max-h-[calc(100vh-140px)] overflow-auto rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff_0%,#e2e8f0_100%)] p-3 md:p-5">
                 {viewport === "mobile" ? (
                   <div className="mx-auto max-w-[420px]">
-                    <div className="mb-4 rounded-[20px] border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
-                      Apercu telephone reel. Pour modifier un bloc, selectionne-le depuis la colonne de gauche ou de droite.
-                    </div>
                     <div className="mx-auto w-[390px] rounded-[42px] border-[10px] border-slate-950 bg-slate-950 p-2 shadow-[0_28px_70px_rgba(15,23,42,0.26)]">
                       <div className="mx-auto mb-2 h-6 w-28 rounded-full bg-slate-800" />
                       <div className="overflow-hidden rounded-[32px] border border-slate-800 bg-white">
                         <iframe
-                          className="block h-[844px] w-full bg-white"
+                          className="block h-[560px] w-full bg-white"
                           onLoad={() => {
                             mobilePreviewFrameRef.current?.contentWindow?.postMessage(
                               {
@@ -1628,16 +2090,16 @@ export function DashboardVisualEditor({
                     <PageLocalizationProvider value={localizationValue}>
                       <PageInlineEditorProvider
                         value={{
-                          enabled: false,
-                          editMode: false,
+                          enabled: true,
+                          editMode: true,
                           toggleEditMode: () => undefined,
-                          activeField: null,
-                          openEditor: () => undefined,
-                          closeEditor: () => undefined,
-                          saveField: async () => undefined,
-                          isSaving: false,
-                          saveError: null,
-                          lastSavedAt: null,
+                          activeField: previewActiveField,
+                          openEditor: openPreviewEditor,
+                          closeEditor: closePreviewEditor,
+                          saveField: savePreviewField,
+                          isSaving: isPreviewSaving,
+                          saveError: previewSaveError,
+                          lastSavedAt: previewLastSavedAt,
                         }}
                       >
                         <div
@@ -1654,6 +2116,7 @@ export function DashboardVisualEditor({
                                   ? "ring-4 ring-blue-500/85 ring-offset-4 ring-offset-transparent"
                                   : "hover:ring-2 hover:ring-blue-300/70 hover:ring-offset-2 hover:ring-offset-transparent",
                               )}
+                              onClick={() => setSelectedSectionIndex(index)}
                               key={`${section.type}-${index}`}
                             >
                               <button
@@ -1732,19 +2195,22 @@ export function DashboardVisualEditor({
                                   Supprimer
                                 </button>
                               </div>
-                              {renderSection(section, index)}
+                              <div className="relative z-30">
+                                {renderSection(section, index)}
+                              </div>
                             </div>
                           ))}
                         </div>
+                        <PageInlineEditorModal />
                       </PageInlineEditorProvider>
                     </PageLocalizationProvider>
                   </div>
                 )}
               </div>
-            </Panel>
           </section>
 
-          <aside className="grid gap-4 self-start xl:sticky xl:top-[124px]">
+          {rightPanelOpen ? (
+          <aside className="grid max-h-[calc(100vh-150px)] gap-4 self-start overflow-auto xl:sticky xl:top-[124px]">
             {selectedSection ? (
               <>
                 <Panel eyebrow="Bloc selectionne" title={getSectionLabel(selectedSection.type)}>
@@ -2014,9 +2480,14 @@ export function DashboardVisualEditor({
                                 ? (item as Record<string, unknown>)
                                 : {};
                             const summaryValue =
-                              collection.fields
-                                .map((field) => itemRecord[field.key])
-                                .find((value) => typeof value === "string" && value.trim().length > 0) ?? `Element ${itemIndex + 1}`;
+                              (typeof item === "string" && item.trim().length > 0
+                                ? item
+                                : typeof item === "number"
+                                  ? String(item)
+                                  : collection.fields
+                                      .map((field) => itemRecord[field.key])
+                                      .find((value) => typeof value === "string" && value.trim().length > 0)) ??
+                              `Element ${itemIndex + 1}`;
 
                             return (
                               <div
@@ -2065,6 +2536,16 @@ export function DashboardVisualEditor({
                                 </div>
 
                                 <div className="mt-4 grid gap-3">
+                                  {collection.fields.length === 0 && (typeof item === "string" || typeof item === "number") ? (
+                                    <label className="grid gap-2">
+                                      <span className="text-sm font-semibold text-slate-800">Valeur</span>
+                                      <input
+                                        className="h-12 rounded-[18px] border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-400"
+                                        onChange={(event) => setGenericValue([...collectionPath, itemIndex], event.target.value)}
+                                        value={String(item)}
+                                      />
+                                    </label>
+                                  ) : null}
                                   {"src" in itemRecord ? (
                                     <label className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:border-slate-300">
                                       {uploadingFieldKey === [...collectionPath, itemIndex, "src"].join("-")
@@ -2394,8 +2875,24 @@ export function DashboardVisualEditor({
               </div>
             </Panel>
           </aside>
+          ) : null}
         </div>
       </div>
+      <AssistantChatWidget
+        isLoading={isAssistantLoading}
+        isOpen={isAssistantOpen}
+        messages={assistantMessages}
+        onPromptChange={setAssistantPrompt}
+        onSubmit={() => {
+          void submitAssistantPrompt();
+        }}
+        onSuggestionClick={(value) => {
+          setAssistantPrompt(value);
+          setIsAssistantOpen(true);
+        }}
+        onToggle={() => setIsAssistantOpen((current) => !current)}
+        prompt={assistantPrompt}
+      />
     </main>
   );
 }

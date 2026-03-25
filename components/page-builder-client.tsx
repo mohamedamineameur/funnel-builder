@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageRuntimeView, type RuntimePagePayload } from "@/components/page-runtime-view";
+import { authorizedFetch } from "@/lib/client-api";
 
 interface PageBuilderClientProps {
   endpoint: string;
@@ -25,7 +26,7 @@ export function PageBuilderClient({ endpoint }: PageBuilderClientProps) {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(endpoint, {
+        const response = await authorizedFetch(endpoint, {
           headers: {
             "Content-Type": "application/json",
           },

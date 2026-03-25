@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUser } from "@/lib/auth";
 
 const uploadDirectory = path.join(process.cwd(), "public", "generated");
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -31,6 +32,12 @@ function resolveExtension(fileName: string, mimeType: string) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAuthenticatedUser();
+
+    if (auth.error || !auth.user) {
+      return auth.error;
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
     const slugValue = formData.get("slug");

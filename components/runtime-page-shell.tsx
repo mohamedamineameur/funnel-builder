@@ -13,6 +13,7 @@ import {
   PageLocalizationProvider,
   type PageLocalizationContextValue,
 } from "@/components/page-localization-provider";
+import { authorizedFetch } from "@/lib/client-api";
 
 interface RuntimePageLocalization {
   locale?: string;
@@ -166,7 +167,7 @@ export function RuntimePageShell({
       setSaveError(null);
 
       try {
-        const response = await fetch("/api/page", {
+        const response = await authorizedFetch("/api/page", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

@@ -92,9 +92,11 @@ export function InlineEditButton({
     <button
       aria-label={`Modifier ${label}`}
       className={cx(
-        "relative inline-flex h-10 w-10 items-center justify-center rounded-full border-2 border-fuchsia-300 bg-[linear-gradient(135deg,#ff00aa,#7c3aed_55%,#22d3ee)] text-white shadow-[0_0_0_3px_rgba(255,255,255,0.22),0_0_22px_rgba(217,70,239,0.72),0_0_38px_rgba(34,211,238,0.46)] transition duration-200 hover:-translate-y-1 hover:scale-110 hover:border-white hover:shadow-[0_0_0_4px_rgba(255,255,255,0.28),0_0_28px_rgba(217,70,239,0.92),0_0_54px_rgba(34,211,238,0.7)] focus-visible:scale-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-300/55",
+        "relative z-[70] inline-flex h-10 w-10 pointer-events-auto items-center justify-center rounded-full border-2 border-fuchsia-300 bg-[linear-gradient(135deg,#ff00aa,#7c3aed_55%,#22d3ee)] text-white shadow-[0_0_0_3px_rgba(255,255,255,0.22),0_0_22px_rgba(217,70,239,0.72),0_0_38px_rgba(34,211,238,0.46)] transition duration-200 hover:-translate-y-1 hover:scale-110 hover:border-white hover:shadow-[0_0_0_4px_rgba(255,255,255,0.28),0_0_28px_rgba(217,70,239,0.92),0_0_54px_rgba(34,211,238,0.7)] focus-visible:scale-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-300/55",
         "before:absolute before:inset-[-6px] before:-z-10 before:animate-pulse before:rounded-full before:bg-[radial-gradient(circle,rgba(255,0,170,0.42)_0%,rgba(124,58,237,0.24)_48%,rgba(34,211,238,0)_78%)]",
-        alwaysVisible ? "opacity-100" : "ml-2 scale-90 opacity-0 group-hover/page-edit:scale-100 group-hover/page-edit:opacity-100 focus:scale-100 focus:opacity-100",
+        alwaysVisible
+          ? "opacity-100"
+          : "ml-2 scale-90 opacity-0 group-hover/page-edit:scale-100 group-hover/page-edit:opacity-100 focus:scale-100 focus:opacity-100",
         className,
       )}
       onClick={(event) => {
@@ -125,11 +127,40 @@ export function EditableText<TTag extends ElementType = "span">({
   value: string;
 }) {
   const Tag = (as ?? "span") as ElementType;
+  const editor = usePageInlineEditor();
+  const isEditable = Boolean(path && editor.enabled && editor.editMode);
+  
+  function openCurrentField() {
+    if (!isEditable || !path) {
+      return;
+    }
+
+    editor.openEditor({ path, label, value, multiline });
+  }
 
   return (
-    <Tag className={cx(className, path ? "group/page-edit" : undefined)}>
+    <Tag
+      className={cx(
+        className,
+        isEditable ? "group/page-edit relative pr-12" : path ? "group/page-edit" : undefined,
+        isEditable
+          ? "relative cursor-pointer decoration-fuchsia-400/70 underline-offset-4 transition hover:decoration-2 hover:decoration-fuchsia-500"
+          : undefined,
+      )}
+      onClick={isEditable ? (event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openCurrentField();
+      } : undefined}
+    >
       {value}
-      <InlineEditButton label={label} multiline={multiline} path={path} value={value} />
+      <InlineEditButton
+        className={isEditable ? "absolute right-0 top-1/2 ml-0 -translate-y-1/2" : undefined}
+        label={label}
+        multiline={multiline}
+        path={path}
+        value={value}
+      />
     </Tag>
   );
 }
