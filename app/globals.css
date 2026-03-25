@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   color-scheme: light;
   --background: #f8fafc;
@@ -24,6 +26,7 @@
 }
 
 html {
+  overflow-x: hidden;
   scroll-behavior: smooth;
 }
 
@@ -31,6 +34,7 @@ body {
   margin: 0;
   background: linear-gradient(180deg, var(--background) 0%, var(--surface-alt) 100%);
   color: var(--text);
+  overflow-x: hidden;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -49,8 +53,9 @@ textarea {
 }
 
 .page-shell {
-  min-height: 100vh;
+  min-height: 100%;
   background: linear-gradient(180deg, var(--background) 0%, var(--surface-alt) 100%);
+  color: var(--text);
 }
 
 .page-loading,
@@ -81,6 +86,7 @@ textarea {
   border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow);
+  color: var(--text);
 }
 
 .hero {
@@ -88,6 +94,7 @@ textarea {
   gap: 32px;
   align-items: center;
   padding: 48px;
+  grid-template-columns: 1fr;
 }
 
 .hero.split,
@@ -118,6 +125,7 @@ textarea {
 .section h3 {
   margin: 0;
   line-height: 1.1;
+  color: var(--text);
 }
 
 .hero h1 {
@@ -128,7 +136,6 @@ textarea {
 .section p,
 .section li,
 .section label {
-  color: var(--text-muted);
   line-height: 1.7;
 }
 
@@ -169,7 +176,7 @@ textarea {
 
 .btn-secondary {
   border-color: var(--border);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--text);
 }
 
@@ -237,6 +244,7 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
+  color: var(--text);
 }
 
 .icon {
@@ -290,7 +298,23 @@ textarea {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 72%, white);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent),
+    0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
 .success-box,
@@ -301,7 +325,7 @@ textarea {
 }
 
 .success-box {
-  background: #f0fdf4;
+  background: var(--success-bg);
   color: var(--success);
 }
 
@@ -316,12 +340,23 @@ textarea {
 }
 
 .navbar {
-  position: sticky;
-  top: 0;
+  width: 100%;
   z-index: 20;
   backdrop-filter: blur(12px);
-  background: rgba(248, 250, 252, 0.9);
-  border-bottom: 1px solid rgba(219, 228, 240, 0.85);
+  transition:
+    transform 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease;
+}
+
+.navbar-solid {
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.navbar-transparent {
+  background: color-mix(in srgb, var(--background) 42%, transparent);
+  border-bottom: 1px solid transparent;
 }
 
 .navbar-inner {
@@ -335,7 +370,6 @@ textarea {
 }
 
 .nav-links {
-  display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
@@ -381,7 +415,8 @@ textarea {
 .comparison-table td {
   padding: 16px;
   border: 1px solid var(--border);
-  background: #ffffff;
+  background: var(--surface);
+  color: var(--text);
   text-align: left;
 }
 
@@ -426,8 +461,25 @@ textarea {
   }
 
   .navbar-inner {
-    flex-direction: column;
-    justify-content: center;
-    padding: 16px 0;
+    min-height: 68px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-card,
+  .page-loading,
+  .page-error,
+  .page-empty,
+  .rich-text {
+    border-radius: 20px;
+  }
+
+  .hero {
+    gap: 24px;
+    padding: 24px;
+  }
+
+  .navbar-inner {
+    width: min(1120px, calc(100% - 24px));
   }
 }

@@ -1,5 +1,10 @@
-import { PageBuilderClient } from "@/components/page-builder-client";
+import { PageRuntimeView } from "@/components/page-runtime-view";
+import { loadRuntimePage } from "@/lib/load-runtime-page";
 
-export default function HomePage() {
-  return <PageBuilderClient endpoint="/api/page" />;
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const page = await loadRuntimePage();
+
+  return <PageRuntimeView page={page} />;
 }

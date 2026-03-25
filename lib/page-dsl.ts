@@ -1,5 +1,9 @@
 import type { PageSection } from "@/component-registry";
 
+export interface LocalizedTextMap {
+  [locale: string]: string;
+}
+
 export interface PageTheme {
   name?: string;
   cornerStyle?: "sharp" | "balanced" | "rounded";
@@ -26,10 +30,20 @@ export interface PageTheme {
   };
 }
 
+export interface PageLocalization {
+  locale?: string;
+  direction?: "ltr" | "rtl";
+  isRTL?: boolean;
+  supportedLocales?: string[];
+  translationContext?: string;
+  translationsEnabled?: boolean;
+}
+
 export interface PagePayload {
   slug: string;
-  title: string;
+  title: string | LocalizedTextMap;
   theme?: PageTheme;
+  localization?: PageLocalization;
   sections: PageSection[];
 }
 
@@ -92,12 +106,85 @@ function isOptionalString(value: unknown): value is string | undefined {
   return value === undefined || typeof value === "string";
 }
 
+function isLocaleMapKey(value: string) {
+  return value === "default" || isLocaleString(value);
+}
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
 function isColorString(value: unknown): value is string {
   return typeof value === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+}
+
+function normalizeLocale(value: string) {
+  const [language, region] = value.trim().replace(/_/g, "-").split("-");
+
+  if (!language) {
+    return "";
+  }
+
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
+}
+
+function isLocaleString(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z]{2,3}([_-][a-zA-Z]{2,4})?$/.test(value.trim());
+}
+
+function isLocalizedTextMap(value: unknown, requireNonEmpty = true): value is LocalizedTextMap {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  const entries = Object.entries(value);
+
+  if (entries.length === 0) {
+    return false;
+  }
+
+  return entries.every(([key, nestedValue]) => {
+    if (!isLocaleMapKey(key)) {
+      return false;
+    }
+
+    return requireNonEmpty ? isNonEmptyString(nestedValue) : typeof nestedValue === "string";
+  });
+}
+
+function isTextLike(value: unknown, requireNonEmpty = true): value is string | LocalizedTextMap {
+  return requireNonEmpty ? isNonEmptyString(value) || isLocalizedTextMap(value, true) : isOptionalString(value) || isLocalizedTextMap(value, false);
+}
+
+function isOptionalTextLike(value: unknown): value is string | LocalizedTextMap | undefined {
+  return value === undefined || isTextLike(value, false);
+}
+
+function isTextLikeArray(value: unknown, requireNonEmpty = true): value is Array<string | LocalizedTextMap> {
+  return Array.isArray(value) && value.every((item) => isTextLike(item, requireNonEmpty));
+}
+
+function resolveTextPreview(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (!isLocalizedTextMap(value, true)) {
+    return "";
+  }
+
+  const preferredEntry = Object.entries(value).find(([key]) => key === "default" || key.startsWith("fr") || key.startsWith("en"));
+  return preferredEntry?.[1] ?? Object.values(value)[0] ?? "";
+}
+
+function isRtlLocale(locale?: string) {
+  if (!locale) return false;
+  const language = normalizeLocale(locale).split("-")[0];
+  return ["ar", "fa", "he", "ur"].includes(language);
 }
 
 function isDarkColor(value: string) {
@@ -113,7 +200,8 @@ function isDarkColor(value: string) {
 }
 
 function getBenefitsAnchorId(title: unknown) {
-  return isNonEmptyString(title) && title.toLowerCase().includes("creation")
+  const titleText = resolveTextPreview(title).toLowerCase();
+  return titleText && titleText.includes("creation")
     ? "creations"
     : "benefits";
 }
@@ -185,7 +273,7 @@ function normalizeAnchor(value: string) {
 
 function resolveNavbarLinkHref(label: unknown, href: unknown, availableAnchors: string[]) {
   const anchors = new Set(availableAnchors);
-  const labelText = isNonEmptyString(label) ? label.toLowerCase() : "";
+  const labelText = resolveTextPreview(label).toLowerCase();
   const hrefText = isNonEmptyString(href) ? href.toLowerCase() : "";
   const normalizedHref = isNonEmptyString(href) ? normalizeAnchor(href) : "";
 
@@ -305,7 +393,7 @@ function validateCta(value: unknown, path: string, errors: string[]) {
     return;
   }
 
-  if (!isNonEmptyString(value.label)) {
+  if (!isTextLike(value.label)) {
     errors.push(`${path}.label est requis.`);
   }
 
@@ -383,6 +471,49 @@ function validateTheme(value: unknown, errors: string[]) {
   }
 }
 
+function validateLocalization(value: unknown, errors: string[]) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!isObject(value)) {
+    errors.push("localization doit etre un objet.");
+    return;
+  }
+
+  if (value.locale !== undefined && !isLocaleString(value.locale)) {
+    errors.push("localization.locale doit etre un code langue valide de type fr, en, ar ou fr-FR.");
+  }
+
+  if (value.direction !== undefined && value.direction !== "ltr" && value.direction !== "rtl") {
+    errors.push('localization.direction doit etre "ltr" ou "rtl".');
+  }
+
+  if (value.isRTL !== undefined && !isBoolean(value.isRTL)) {
+    errors.push("localization.isRTL doit etre un boolean.");
+  }
+
+  if (value.supportedLocales !== undefined) {
+    if (!Array.isArray(value.supportedLocales)) {
+      errors.push("localization.supportedLocales doit etre un tableau.");
+    } else {
+      value.supportedLocales.forEach((locale, index) => {
+        if (!isLocaleString(locale)) {
+          errors.push(`localization.supportedLocales[${index}] doit etre un code langue valide.`);
+        }
+      });
+    }
+  }
+
+  if (value.translationContext !== undefined && !isOptionalString(value.translationContext)) {
+    errors.push("localization.translationContext doit etre une chaine si renseigne.");
+  }
+
+  if (value.translationsEnabled !== undefined && !isBoolean(value.translationsEnabled)) {
+    errors.push("localization.translationsEnabled doit etre un boolean.");
+  }
+}
+
 function validateSection(section: unknown, index: number, errors: string[]) {
   const path = `sections[${index}]`;
 
@@ -413,11 +544,11 @@ function validateSection(section: unknown, index: number, errors: string[]) {
 
   switch (section.type) {
     case "navbar":
-      if (!isNonEmptyString(props.logoText)) errors.push(`${path}.props.logoText est requis.`);
+      if (!isTextLike(props.logoText)) errors.push(`${path}.props.logoText est requis.`);
       if (!Array.isArray(props.links)) errors.push(`${path}.props.links doit etre un tableau.`);
       if (Array.isArray(props.links)) {
         props.links.forEach((link, linkIndex) => {
-          if (!isObject(link) || !isNonEmptyString(link.label) || !isNonEmptyString(link.href)) {
+          if (!isObject(link) || !isTextLike(link.label) || !isNonEmptyString(link.href)) {
             errors.push(`${path}.props.links[${linkIndex}] est invalide.`);
           }
         });
@@ -428,11 +559,11 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       if (section.variant !== undefined && !HERO_VARIANTS.includes(section.variant as (typeof HERO_VARIANTS)[number])) {
         errors.push(`${path}.variant n'est pas supporte pour hero.`);
       }
-      if (!isNonEmptyString(props.headline)) errors.push(`${path}.props.headline est requis.`);
-      if (!isNonEmptyString(props.subheadline)) errors.push(`${path}.props.subheadline est requis.`);
+      if (!isTextLike(props.headline)) errors.push(`${path}.props.headline est requis.`);
+      if (!isTextLike(props.subheadline)) errors.push(`${path}.props.subheadline est requis.`);
       if (props.primaryCta !== undefined) validateCta(props.primaryCta, `${path}.props.primaryCta`, errors);
       if (props.secondaryCta !== undefined) validateCta(props.secondaryCta, `${path}.props.secondaryCta`, errors);
-      if (props.badges !== undefined && !isStringArray(props.badges)) {
+      if (props.badges !== undefined && !isTextLikeArray(props.badges)) {
         errors.push(`${path}.props.badges doit etre un tableau de chaines.`);
       }
       if (props.stats !== undefined) {
@@ -440,7 +571,7 @@ function validateSection(section: unknown, index: number, errors: string[]) {
           errors.push(`${path}.props.stats doit etre un tableau.`);
         } else {
           props.stats.forEach((item, itemIndex) => {
-            if (!isObject(item) || !isNonEmptyString(item.value) || !isNonEmptyString(item.label)) {
+            if (!isObject(item) || !isTextLike(item.value) || !isTextLike(item.label)) {
               errors.push(`${path}.props.stats[${itemIndex}] est invalide.`);
             }
           });
@@ -466,19 +597,19 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       if (section.variant !== undefined && !BENEFITS_VARIANTS.includes(section.variant as (typeof BENEFITS_VARIANTS)[number])) {
         errors.push(`${path}.variant n'est pas supporte pour benefits.`);
       }
-      if (!isNonEmptyString(props.title)) errors.push(`${path}.props.title est requis.`);
+      if (!isTextLike(props.title)) errors.push(`${path}.props.title est requis.`);
       if (!Array.isArray(props.items) || props.items.length === 0) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.title) || !isNonEmptyString(item.description) || !isNonEmptyString(item.icon)) {
+          if (!isObject(item) || !isTextLike(item.title) || !isTextLike(item.description) || !isNonEmptyString(item.icon)) {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
           }
         });
       }
       break;
     case "trust_bar":
-      if (!isStringArray(props.items) || props.items.length === 0) {
+      if (!isTextLikeArray(props.items) || props.items.length === 0) {
         errors.push(`${path}.props.items doit etre un tableau de chaines non vide.`);
       }
       break;
@@ -490,7 +621,7 @@ function validateSection(section: unknown, index: number, errors: string[]) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.value) || !isNonEmptyString(item.label)) {
+          if (!isObject(item) || !isTextLike(item.value) || !isTextLike(item.label)) {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
             return;
           }
@@ -511,9 +642,9 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       if (section.variant !== undefined && !FORM_VARIANTS.includes(section.variant as (typeof FORM_VARIANTS)[number])) {
         errors.push(`${path}.variant n'est pas supporte pour form.`);
       }
-      if (!isNonEmptyString(props.title)) errors.push(`${path}.props.title est requis.`);
-      if (!isNonEmptyString(props.submitLabel)) errors.push(`${path}.props.submitLabel est requis.`);
-      if (!isNonEmptyString(props.successMessage)) errors.push(`${path}.props.successMessage est requis.`);
+      if (!isTextLike(props.title)) errors.push(`${path}.props.title est requis.`);
+      if (!isTextLike(props.submitLabel)) errors.push(`${path}.props.submitLabel est requis.`);
+      if (!isTextLike(props.successMessage)) errors.push(`${path}.props.successMessage est requis.`);
       if (!Array.isArray(props.fields) || props.fields.length === 0) {
         errors.push(`${path}.props.fields doit etre un tableau non vide.`);
       } else {
@@ -525,10 +656,13 @@ function validateSection(section: unknown, index: number, errors: string[]) {
           if (!FORM_FIELD_TYPES.includes(field.type as (typeof FORM_FIELD_TYPES)[number])) {
             errors.push(`${path}.props.fields[${fieldIndex}].type n'est pas supporte.`);
           }
-          if (!isNonEmptyString(field.name) || !isNonEmptyString(field.label) || typeof field.required !== "boolean") {
+          if (!isNonEmptyString(field.name) || !isTextLike(field.label) || typeof field.required !== "boolean") {
             errors.push(`${path}.props.fields[${fieldIndex}] est invalide.`);
           }
-          if (field.options !== undefined && !isStringArray(field.options)) {
+          if (field.placeholder !== undefined && !isOptionalTextLike(field.placeholder)) {
+            errors.push(`${path}.props.fields[${fieldIndex}].placeholder doit etre une chaine ou un objet de traductions.`);
+          }
+          if (field.options !== undefined && !isTextLikeArray(field.options)) {
             errors.push(`${path}.props.fields[${fieldIndex}].options doit etre un tableau de chaines.`);
           }
         });
@@ -538,44 +672,44 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       if (section.variant !== undefined && !TESTIMONIALS_VARIANTS.includes(section.variant as (typeof TESTIMONIALS_VARIANTS)[number])) {
         errors.push(`${path}.variant n'est pas supporte pour testimonials.`);
       }
-      if (!isNonEmptyString(props.title)) errors.push(`${path}.props.title est requis.`);
+      if (!isTextLike(props.title)) errors.push(`${path}.props.title est requis.`);
       if (!Array.isArray(props.items) || props.items.length === 0) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.name) || !isNonEmptyString(item.role) || !isNonEmptyString(item.quote) || typeof item.rating !== "number") {
+          if (!isObject(item) || !isTextLike(item.name) || !isTextLike(item.role) || !isTextLike(item.quote) || typeof item.rating !== "number") {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
           }
         });
       }
       break;
     case "faq":
-      if (!isNonEmptyString(props.title)) errors.push(`${path}.props.title est requis.`);
+      if (!isTextLike(props.title)) errors.push(`${path}.props.title est requis.`);
       if (!Array.isArray(props.items) || props.items.length === 0) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.question) || !isNonEmptyString(item.answer)) {
+          if (!isObject(item) || !isTextLike(item.question) || !isTextLike(item.answer)) {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
           }
         });
       }
       break;
     case "cta_banner":
-      if (!isNonEmptyString(props.headline)) errors.push(`${path}.props.headline est requis.`);
-      if (!isNonEmptyString(props.subheadline)) errors.push(`${path}.props.subheadline est requis.`);
+      if (!isTextLike(props.headline)) errors.push(`${path}.props.headline est requis.`);
+      if (!isTextLike(props.subheadline)) errors.push(`${path}.props.subheadline est requis.`);
       validateCta(props.primaryCta, `${path}.props.primaryCta`, errors);
       break;
     case "comparison":
-      if (!isStringArray(props.columns) || props.columns.length === 0) {
+      if (!isTextLikeArray(props.columns) || props.columns.length === 0) {
         errors.push(`${path}.props.columns doit etre un tableau de chaines non vide.`);
       }
-      if (!Array.isArray(props.rows) || props.rows.some((row) => !Array.isArray(row) || !row.every((item) => typeof item === "string"))) {
+      if (!Array.isArray(props.rows) || props.rows.some((row) => !Array.isArray(row) || !row.every((item) => isTextLike(item)))) {
         errors.push(`${path}.props.rows doit etre un tableau de lignes texte.`);
       }
       break;
     case "image":
-      if (!isNonEmptyString(props.src) || !isNonEmptyString(props.alt)) {
+      if (!isNonEmptyString(props.src) || !isTextLike(props.alt)) {
         errors.push(`${path}.props.src et props.alt sont requis.`);
       }
       break;
@@ -587,15 +721,15 @@ function validateSection(section: unknown, index: number, errors: string[]) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.src) || !isNonEmptyString(item.alt)) {
+          if (!isObject(item) || !isNonEmptyString(item.src) || !isTextLike(item.alt)) {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
           }
         });
       }
-      if (!isOptionalString(props.title)) {
+      if (!isOptionalTextLike(props.title)) {
         errors.push(`${path}.props.title doit etre une chaine si renseigne.`);
       }
-      if (!isOptionalString(props.subtitle)) {
+      if (!isOptionalTextLike(props.subtitle)) {
         errors.push(`${path}.props.subtitle doit etre une chaine si renseigne.`);
       }
       break;
@@ -603,13 +737,13 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       if (!isNonEmptyString(props.url)) errors.push(`${path}.props.url est requis.`);
       break;
     case "rich_text":
-      if (!isNonEmptyString(props.content)) errors.push(`${path}.props.content est requis.`);
+      if (!isTextLike(props.content)) errors.push(`${path}.props.content est requis.`);
       if (props.align !== undefined && !["left", "center", "right"].includes(String(props.align))) {
         errors.push(`${path}.props.align doit etre left, center ou right.`);
       }
       break;
     case "countdown":
-      if (!isNonEmptyString(props.endAt) || !isNonEmptyString(props.label)) {
+      if (!isNonEmptyString(props.endAt) || !isTextLike(props.label)) {
         errors.push(`${path}.props.endAt et props.label sont requis.`);
       }
       break;
@@ -618,7 +752,7 @@ function validateSection(section: unknown, index: number, errors: string[]) {
         errors.push(`${path}.props.plans doit etre un tableau non vide.`);
       } else {
         props.plans.forEach((plan, planIndex) => {
-          if (!isObject(plan) || !isNonEmptyString(plan.name) || !isNonEmptyString(plan.price) || !isStringArray(plan.features)) {
+          if (!isObject(plan) || !isTextLike(plan.name) || !isTextLike(plan.price) || !isTextLikeArray(plan.features)) {
             errors.push(`${path}.props.plans[${planIndex}] est invalide.`);
           }
         });
@@ -630,12 +764,12 @@ function validateSection(section: unknown, index: number, errors: string[]) {
       }
       break;
     case "steps":
-      if (!isNonEmptyString(props.title)) errors.push(`${path}.props.title est requis.`);
+      if (!isTextLike(props.title)) errors.push(`${path}.props.title est requis.`);
       if (!Array.isArray(props.items) || props.items.length === 0) {
         errors.push(`${path}.props.items doit etre un tableau non vide.`);
       } else {
         props.items.forEach((item, itemIndex) => {
-          if (!isObject(item) || !isNonEmptyString(item.step) || !isNonEmptyString(item.title) || !isNonEmptyString(item.description)) {
+          if (!isObject(item) || !isTextLike(item.step) || !isTextLike(item.title) || !isTextLike(item.description)) {
             errors.push(`${path}.props.items[${itemIndex}] est invalide.`);
           }
         });
@@ -646,12 +780,12 @@ function validateSection(section: unknown, index: number, errors: string[]) {
         errors.push(`${path}.props.columns doit etre un tableau non vide.`);
       } else {
         props.columns.forEach((column, columnIndex) => {
-          if (!isObject(column) || !isNonEmptyString(column.title) || !Array.isArray(column.links)) {
+          if (!isObject(column) || !isTextLike(column.title) || !Array.isArray(column.links)) {
             errors.push(`${path}.props.columns[${columnIndex}] est invalide.`);
             return;
           }
           column.links.forEach((link, linkIndex) => {
-            if (!isObject(link) || !isNonEmptyString(link.label) || !isNonEmptyString(link.href)) {
+            if (!isObject(link) || !isTextLike(link.label) || !isNonEmptyString(link.href)) {
               errors.push(`${path}.props.columns[${columnIndex}].links[${linkIndex}] est invalide.`);
             }
           });
@@ -733,6 +867,43 @@ export function normalizePagePayloadForRuntime(value: unknown): unknown {
 
     delete theme.colors;
     normalizedRoot.theme = theme;
+  }
+
+  if (isObject(value.localization)) {
+    const localization = { ...value.localization } as Record<string, unknown>;
+    const locale = isLocaleString(localization.locale) ? normalizeLocale(localization.locale) : undefined;
+    const supportedLocales = Array.isArray(localization.supportedLocales)
+      ? localization.supportedLocales
+          .filter((item): item is string => isLocaleString(item))
+          .map((item) => normalizeLocale(item))
+      : locale
+        ? [locale]
+        : [];
+    const uniqueSupportedLocales = Array.from(new Set(supportedLocales));
+    const inferredRtl = isBoolean(localization.isRTL)
+      ? localization.isRTL
+      : isRtlLocale(locale ?? uniqueSupportedLocales[0]);
+    const direction =
+      localization.direction === "rtl" || localization.direction === "ltr"
+        ? localization.direction
+        : inferredRtl
+          ? "rtl"
+          : "ltr";
+
+    normalizedRoot.localization = {
+      ...localization,
+      ...(locale ? { locale } : {}),
+      ...(uniqueSupportedLocales.length > 0 ? { supportedLocales: uniqueSupportedLocales } : {}),
+      ...(isOptionalString(localization.translationContext) && localization.translationContext?.trim()
+        ? { translationContext: localization.translationContext.trim() }
+        : {}),
+      direction,
+      isRTL: direction === "rtl",
+      translationsEnabled:
+        isBoolean(localization.translationsEnabled)
+          ? localization.translationsEnabled
+          : uniqueSupportedLocales.length > 1,
+    };
   }
 
   if (!Array.isArray(value.sections)) {
@@ -872,11 +1043,12 @@ export function validatePagePayload(value: unknown): ValidationResult {
     errors.push("slug est requis.");
   }
 
-  if (!isNonEmptyString(value.title)) {
+  if (!isTextLike(value.title)) {
     errors.push("title est requis.");
   }
 
   validateTheme(value.theme, errors);
+  validateLocalization(value.localization, errors);
 
   if (!Array.isArray(value.sections) || value.sections.length === 0) {
     errors.push("sections doit etre un tableau non vide.");
@@ -892,12 +1064,12 @@ export function validatePagePayload(value: unknown): ValidationResult {
     return { success: false, errors };
   }
 
-  return { success: true, data: value as PagePayload };
+  return { success: true, data: value as unknown as PagePayload };
 }
 
 export const dslPromptSummary = `
 DSL autorise:
-- Racine: { slug, title, theme?, sections[] }
+- Racine: { slug, title, theme?, localization?, sections[] }
 - sections[].type autorises: ${SUPPORTED_SECTION_TYPES.join(", ")}
 - Variants hero: ${HERO_VARIANTS.join(", ")}
 - Variants benefits: ${BENEFITS_VARIANTS.join(", ")}
@@ -908,6 +1080,8 @@ DSL autorise:
 - CTA action autorisees: ${CTA_ACTIONS.join(", ")}
 - Form field types autorises: ${FORM_FIELD_TYPES.join(", ")}
 - theme optionnel avec couleurs hexadecimales; "theme.palette" est accepte et prefere comme source de verite.
+- localization optionnel = { locale?, direction?: "ltr" | "rtl", isRTL?: boolean, supportedLocales?: string[], translationContext?: string, translationsEnabled?: boolean }
+- Les champs texte visibles peuvent etre soit une chaine simple, soit un objet de traductions du type { fr: "...", en: "...", ar: "..." }.
 - Retourne strictement du JSON valide sans markdown, sans commentaire, sans texte additionnel.
 `.trim();
 
@@ -918,6 +1092,11 @@ Tu dois generer UNIQUEMENT des sections de ce sous-ensemble:
 ${SUPPORTED_SECTION_TYPES.join(", ")}
 
 Contraintes runtime exactes:
+- localization = { locale?: string, direction?: "ltr" | "rtl", isRTL?: boolean, supportedLocales?: string[], translationContext?: string, translationsEnabled?: boolean }
+- Si la langue principale est arabe, hebreu, persan ou ourdou, utilise direction "rtl" et isRTL true.
+- Si plusieurs langues sont prevues, renseigne supportedLocales avec tous les codes langues et translationsEnabled true.
+- Pour les champs texte visibles, tu peux utiliser soit "string", soit un objet localise: { fr: "...", en: "...", ar: "..." }.
+- Si plusieurs langues sont demandees, prefere les objets localises pour headline, subheadline, titles, labels, questions, answers, CTA et textes visibles majeurs.
 - navbar.props = { logoText: string, links: [{ label, href }], cta?: { label, action } }
 - Tous les liens du header doivent pointer uniquement vers des sections internes de la page.
 - navbar.props.links[].href doit toujours etre une ancre interne valide de la forme #section-id.

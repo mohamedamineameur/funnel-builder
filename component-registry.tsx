@@ -207,6 +207,9 @@ export interface NavbarProps {
     href: string;
   }>;
   cta?: CtaAction;
+  sticky?: boolean;
+  transparent?: boolean;
+  showOnScroll?: boolean;
 }
 
 export interface FooterProps {
@@ -483,6 +486,7 @@ export function renderSection(section: PageSection, key?: React.Key) {
   return (
     <Component
       key={key}
+      sectionIndex={typeof key === "number" ? key : undefined}
       variant={section.variant}
       {...(section.props as Record<string, unknown>)}
     />

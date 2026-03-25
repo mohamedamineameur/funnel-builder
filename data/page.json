@@ -1,43 +1,56 @@
 {
-  "slug": "ecommerce-landing-inscription",
-  "title": "Simplifiez votre expérience e-commerce",
+  "slug": "application-mobile-landing",
+  "title": "Application Mobile - Inscription",
+  "localization": {
+    "locale": "fr",
+    "direction": "ltr",
+    "isRTL": false,
+    "translationsEnabled": false,
+    "supportedLocales": [
+      "fr"
+    ]
+  },
   "theme": {
-    "name": "Luxury aubergine",
+    "name": "generated_theme",
     "cornerStyle": "balanced",
-    "primaryColor": "#581c87",
-    "secondaryColor": "#e9d5ff",
-    "accentColor": "#581c87",
-    "backgroundColor": "#2e1065",
-    "surfaceColor": "#581c87",
-    "surfaceAltColor": "#581c87",
-    "textColor": "#ffffff",
-    "mutedTextColor": "#cbd5e1",
-    "borderColor": "#334155",
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#10b981",
+    "accentColor": "#f59e0b",
+    "backgroundColor": "#ffffff",
+    "surfaceColor": "#ffffff",
+    "surfaceAltColor": "#f3f4f6",
+    "textColor": "#111827",
+    "mutedTextColor": "#6b7280",
+    "borderColor": "#dbe4f0",
     "buttonTextColor": "#ffffff",
     "successColor": "#15803d",
     "warningColor": "#d97706",
     "palette": {
-      "primary": "#581c87",
-      "secondary": "#e9d5ff",
-      "background": "#2e1065",
-      "textPrimary": "#ffffff",
-      "textSecondary": "#cbd5e1",
-      "accent": "#581c87",
-      "muted": "#581c87"
+      "primary": "#2563eb",
+      "secondary": "#10b981",
+      "background": "#ffffff",
+      "textPrimary": "#111827",
+      "textSecondary": "#6b7280",
+      "accent": "#f59e0b",
+      "muted": "#f3f4f6"
     }
   },
   "sections": [
     {
       "type": "navbar",
       "props": {
-        "logoText": "E-Shop",
+        "logoText": "AmineMobile",
         "links": [
+          {
+            "label": "Accueil",
+            "href": "#content"
+          },
           {
             "label": "Avantages",
             "href": "#benefits"
           },
           {
-            "label": "Avis clients",
+            "label": "Témoignages",
             "href": "#testimonials"
           },
           {
@@ -55,28 +68,23 @@
         },
         "sticky": true,
         "transparent": false,
-        "showOnScroll": true
+        "showOnScroll": false
       }
     },
     {
       "type": "hero",
-      "variant": "split",
       "props": {
-        "eyebrow": "Découvrez la simplicité",
-        "headline": "Votre boutique en ligne facile et rapide",
-        "subheadline": "Inscrivez-vous gratuitement et commencez à vendre en quelques clics.",
+        "eyebrow": "Découvrez notre application",
+        "headline": "Simplifiez votre quotidien avec notre application mobile",
+        "subheadline": "Inscrivez-vous dès maintenant et profitez d'une expérience fluide et intuitive.",
         "primaryCta": {
           "label": "Créer un compte",
           "action": "scroll_to_form"
         },
-        "secondaryCta": {
-          "label": "En savoir plus",
-          "action": "scroll_to_section"
-        },
         "media": {
           "kind": "image",
-          "style": "max-width: 100%; border-radius: 12px;",
-          "src": "/generated/ecommerce-landing-inscription-1-1774331414656.png"
+          "style": "max-w-md rounded-lg shadow-lg",
+          "src": "/generated/application-mobile-landing-1-1774378138724.png"
         },
         "tone": "professional"
       }
@@ -85,56 +93,54 @@
       "type": "benefits",
       "variant": "cards",
       "props": {
-        "title": "Pourquoi choisir notre plateforme ?",
-        "subtitle": "Des bénéfices clairs pour tous",
+        "title": "Pourquoi choisir notre application ?",
+        "subtitle": "Des fonctionnalités pensées pour vous faciliter la vie",
         "columns": 3,
         "items": [
           {
-            "title": "Simplicité d’utilisation",
-            "description": "Une interface intuitive pour gérer votre boutique sans effort.",
-            "icon": "AutoAwesomeRounded"
+            "title": "Interface intuitive",
+            "description": "Naviguez facilement grâce à une interface claire et épurée.",
+            "icon": "layers"
           },
           {
-            "title": "Inscription gratuite",
-            "description": "Commencez sans frais avec notre offre freemium complète.",
-            "icon": "CheckCircleRounded"
+            "title": "Sécurité renforcée",
+            "description": "Vos données sont protégées avec les meilleurs standards de sécurité.",
+            "icon": "shield"
           },
           {
-            "title": "Support client dédié",
-            "description": "Une équipe professionnelle à votre écoute pour vous accompagner.",
-            "icon": "LocalPhoneRounded"
+            "title": "Support 24/7",
+            "description": "Une équipe dédiée pour répondre à toutes vos questions à tout moment.",
+            "icon": "phone"
           }
         ]
-      },
-      "id": "benefits"
+      }
     },
     {
       "type": "testimonials",
       "variant": "carousel",
       "props": {
-        "title": "Ce que nos utilisateurs disent",
+        "title": "Ils nous font confiance",
         "items": [
           {
-            "name": "Sophie L.",
-            "role": "Entrepreneure",
-            "quote": "Grâce à cette plateforme, j’ai lancé ma boutique en ligne en un temps record.",
+            "name": "Sophie Martin",
+            "role": "Utilisatrice satisfaite",
+            "quote": "L'application a vraiment changé ma façon de gérer mes tâches quotidiennes. Simple et efficace !",
             "rating": 5
           },
           {
-            "name": "Marc D.",
-            "role": "Commerçant",
-            "quote": "Simple, efficace et un support toujours disponible, je recommande vivement.",
+            "name": "Julien Dupont",
+            "role": "Professionnel",
+            "quote": "Une solution mobile fiable et sécurisée que je recommande à tous mes collègues.",
             "rating": 4
           },
           {
-            "name": "Claire P.",
-            "role": "Créatrice",
-            "quote": "L’interface est claire et facile à prendre en main, parfait pour débuter.",
+            "name": "Claire Bernard",
+            "role": "Étudiante",
+            "quote": "Design épuré et fonctionnalités pratiques, parfaite pour mon organisation personnelle.",
             "rating": 5
           }
         ]
-      },
-      "id": "testimonials"
+      }
     },
     {
       "type": "faq",
@@ -142,95 +148,98 @@
         "title": "Questions fréquentes",
         "items": [
           {
-            "question": "L’inscription est-elle vraiment gratuite ?",
-            "answer": "Oui, notre offre freemium vous permet de commencer sans aucun coût."
+            "question": "Comment créer un compte ?",
+            "answer": "Cliquez sur le bouton 'Créer un compte' et remplissez le formulaire d'inscription."
           },
           {
-            "question": "Puis-je passer à une offre payante plus tard ?",
-            "answer": "Absolument, vous pouvez évoluer vers des options avancées à tout moment."
+            "question": "L'application est-elle gratuite ?",
+            "answer": "Oui, l'application est entièrement gratuite avec des fonctionnalités de base accessibles à tous."
           },
           {
-            "question": "Quel type de support est disponible ?",
-            "answer": "Notre équipe est disponible par téléphone et email pour vous aider."
+            "question": "Puis-je utiliser l'application sur plusieurs appareils ?",
+            "answer": "Oui, votre compte est synchronisé sur tous vos appareils connectés."
           }
         ]
-      },
-      "id": "faq"
+      }
     },
     {
       "type": "form",
-      "variant": "stacked",
+      "variant": "card",
       "props": {
         "title": "Inscrivez-vous dès maintenant",
         "submitLabel": "Créer un compte",
         "fields": [
           {
             "type": "text",
-            "name": "nom",
-            "label": "Nom",
+            "name": "fullname",
+            "label": "Nom complet",
             "required": true,
             "placeholder": "Votre nom complet"
           },
           {
             "type": "email",
             "name": "email",
-            "label": "Email",
+            "label": "Adresse email",
             "required": true,
             "placeholder": "exemple@domaine.com"
+          },
+          {
+            "type": "tel",
+            "name": "phone",
+            "label": "Numéro de téléphone",
+            "required": false,
+            "placeholder": "+33 6 12 34 56 78"
+          },
+          {
+            "type": "text",
+            "name": "password",
+            "label": "Mot de passe",
+            "required": true,
+            "placeholder": "Choisissez un mot de passe sécurisé"
           }
         ],
         "successMessage": "Merci pour votre inscription ! Un email de confirmation vous a été envoyé."
-      },
-      "id": "form"
+      }
     },
     {
       "type": "footer",
       "props": {
         "columns": [
           {
-            "title": "E-Shop",
+            "title": "AppMobile",
             "links": [
               {
-                "label": "À propos",
+                "label": "Accueil",
+                "href": "#hero"
+              },
+              {
+                "label": "Avantages",
                 "href": "#benefits"
               },
               {
-                "label": "Contact",
-                "href": "#form"
+                "label": "Témoignages",
+                "href": "#testimonials"
               },
               {
                 "label": "FAQ",
                 "href": "#faq"
-              }
-            ]
-          },
-          {
-            "title": "Support",
-            "links": [
+              },
               {
-                "label": "Assistance",
+                "label": "Inscription",
                 "href": "#form"
-              },
-              {
-                "label": "Conditions d'utilisation",
-                "href": "#faq"
               }
             ]
           },
           {
-            "title": "Réseaux sociaux",
+            "title": "Contact",
             "links": [
               {
-                "label": "Facebook",
-                "href": "#"
+                "label": "Support",
+                "href": "#faq"
               },
               {
-                "label": "Twitter",
-                "href": "#"
-              },
-              {
-                "label": "Instagram",
-                "href": "#"
+                "label": "Email",
+                "href": "mailto:support@appmobile.com"
               }
             ]
           }

@@ -1,39 +1,12 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
-import { useMemo, useState } from "react";
-import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
-import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CampaignRoundedIcon from "@mui/icons-material/CampaignRounded";
-import PaletteRoundedIcon from "@mui/icons-material/PaletteRounded";
-import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
-import RocketLaunchRoundedIcon from "@mui/icons-material/RocketLaunchRounded";
-import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
-import ViewQuiltRoundedIcon from "@mui/icons-material/ViewQuiltRounded";
-import WorkspacesRoundedIcon from "@mui/icons-material/WorkspacesRounded";
-import {
-  Alert,
-  Box,
-  Button,
-  ButtonBase,
-  Checkbox,
-  Chip,
-  CircularProgress,
-  Container,
-  Divider,
-  Fade,
-  LinearProgress,
-  MenuItem,
-  Paper,
-  Skeleton,
-  Stack,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+function cx(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
+}
 
 interface GenerateResponse {
   success?: boolean;
@@ -45,46 +18,30 @@ interface GenerateResponse {
 type PromptMode = "free" | "guided";
 type ColorMode = "model" | "palette" | "custom";
 type GradientMode = "model" | "with" | "without";
-type HeroImageMode = "none" | "context" | "custom";
-type DescriptionMode = "context" | "custom";
+type DirectionMode = "auto" | "ltr" | "rtl";
 
 interface GuidedPromptState {
   websiteName: string;
   businessDescription: string;
   product: string;
-  productOther: string;
   pageType: string;
-  pageTypeOther: string;
   goal: string;
-  goalOther: string;
-  complexity: string;
-  complexityOther: string;
-  pageLength: string;
-  pageLengthOther: string;
   audience: string;
-  audienceOther: string;
-  awarenessLevel: string;
-  awarenessLevelOther: string;
-  geography: string;
-  geographyOther: string;
-  promise: string;
-  promiseOther: string;
-  marketingAngle: string;
-  marketingAngleOther: string;
-  proofLevel: string;
-  proofLevelOther: string;
+  displayLanguage: string;
+  multilingualMode: boolean;
+  supportedLanguages: string;
+  directionMode: DirectionMode;
+  translationContext: string;
   style: string;
-  styleOther: string;
-  ambiance: string;
-  ambianceOther: string;
-  uiStyle: string;
-  uiStyleOther: string;
-  cornerStyle: string;
-  cornerStyleOther: string;
   tone: string;
-  toneOther: string;
-  copyStyle: string;
-  copyStyleOther: string;
+  uiStyle: string;
+  headerVariant: string;
+  headerSticky: string;
+  headerTransparency: string;
+  headerScrollBehavior: string;
+  uxLevel: string;
+  uxOptions: string[];
+  cornerStyle: string;
   colorMode: ColorMode;
   gradientMode: GradientMode;
   palette: string;
@@ -94,98 +51,15 @@ interface GuidedPromptState {
   customAccent: string;
   customBackground: string;
   customText: string;
-  heroLayout: string;
-  heroLayoutOther: string;
-  heroContent: string;
-  heroContentOther: string;
-  heroMedia: string;
-  heroMediaOther: string;
-  heroImageMode: HeroImageMode;
+  sections: string[];
+  cta: string;
+  heroImageMode: "none" | "context" | "custom";
   heroImageCustomDescription: string;
   galleryImageCount: string;
   imageDisplay: string;
-  imageDisplayOther: string;
-  galleryDescriptionMode: DescriptionMode;
+  galleryDescriptionMode: "context" | "custom";
   galleryCustomDescription: string;
-  cta: string;
-  ctaOther: string;
-  secondaryCta: string;
-  secondaryCtaOther: string;
-  formGoal: string;
-  formGoalOther: string;
-  formFriction: string;
-  formFrictionOther: string;
-  funnelStage: string;
-  funnelStageOther: string;
-  offerType: string;
-  offerTypeOther: string;
-  urgency: string;
-  urgencyOther: string;
-  language: string;
-  languageOther: string;
-  targetDevice: string;
-  targetDeviceOther: string;
-  density: string;
-  densityOther: string;
-  accessibility: string;
-  accessibilityOther: string;
-  headerStyle: string;
-  headerStyleOther: string;
-  footerStyle: string;
-  footerStyleOther: string;
-  sections: string[];
-  sectionsOther: string;
-  advancedSections: string[];
-  advancedSectionsOther: string;
-  requiredSections: string[];
-  requiredSectionsOther: string;
-  forbiddenSections: string[];
-  forbiddenSectionsOther: string;
-  proofElements: string[];
-  proofElementsOther: string;
-  formFields: string[];
-  formFieldsOther: string;
-  animationTypes: string[];
-  animationTypesOther: string;
-  specializedFocus: string[];
-  specializedFocusOther: string;
-  referenceVisual: string;
-  avoidThings: string;
-  promiseSentence: string;
-  mainObjection: string;
-  differentiator: string;
-  emotion: string;
-  quickAction: string;
   notes: string;
-}
-
-interface SelectWithOtherFieldProps {
-  label: string;
-  value: string;
-  otherValue: string;
-  options: readonly string[];
-  onValueChange: (value: string) => void;
-  onOtherChange: (value: string) => void;
-  helperText?: string;
-  otherLabel?: string;
-  placeholder?: string;
-}
-
-interface CheckboxSuggestionGroupProps {
-  label: string;
-  options: readonly string[];
-  values: string[];
-  onToggle: (value: string) => void;
-  helperText?: string;
-  otherValue: string;
-  onOtherChange: (value: string) => void;
-  otherLabel?: string;
-}
-
-interface FieldPanelProps {
-  title: string;
-  description?: string;
-  children: ReactNode;
 }
 
 interface PalettePreviewDefinition {
@@ -195,6 +69,9 @@ interface PalettePreviewDefinition {
   colors: [string, string, string, string];
   isDark?: boolean;
 }
+
+type PaletteCategory = "Dark" | "Neutre" | "Flashy" | "Premium" | "Nature" | "Tech";
+type UxCategory = "Engagement" | "Fluidite";
 
 interface ThemeConstraintPayload {
   name?: string;
@@ -210,421 +87,308 @@ interface ThemeConstraintPayload {
   };
 }
 
-const DEFAULT_PROMPT = `Genere une page de vente pour une patisserie artisanale haut de gamme a Montreal.
-Je veux une hero tres appetissante, une section avantages, des creations signatures, des avis clients,
-un formulaire de commande, une FAQ et un footer. Le ton doit etre premium, chaleureux et gourmand.`;
+interface LocalizationConstraintPayload {
+  locale?: string;
+  direction: "ltr" | "rtl";
+  isRTL: boolean;
+  supportedLocales?: string[];
+  translationContext?: string;
+  translationsEnabled: boolean;
+}
 
-const OTHER_VALUE = "__other__";
+interface FreePromptSuggestion {
+  key: string;
+  title: string;
+  prompt: string;
+}
+
+interface UxOptionDefinition {
+  value: string;
+  label: string;
+  description: string;
+  category: UxCategory;
+}
+
+type DraftSaveState = "idle" | "saved";
+
+interface StepChecklistItem {
+  label: string;
+  done: boolean;
+}
+
+interface StarterPreset {
+  key: string;
+  title: string;
+  description: string;
+  apply: Partial<GuidedPromptState>;
+}
+
+interface LoadingStepDefinition {
+  title: string;
+  description: string;
+}
+
+const DEFAULT_PROMPT = `Genere une page de vente pour une patisserie artisanale haut de gamme a Montreal.
+Je veux une hero tres appetissante, une section avantages, des avis clients, un formulaire, une FAQ et un footer.`;
+
+const PROMPT_DRAFT_STORAGE_KEY = "capturia.prompt.draft.v1";
+const SIMULATED_LOADING_DURATION_SECONDS = 100;
+const ROBOT_GIF_URL = "/robot.gif";
+
+const FREE_PROMPT_SUGGESTIONS: readonly FreePromptSuggestion[] = [
+  {
+    key: "arabic-rtl",
+    title: "Page 100% arabe",
+    prompt:
+      "Genere une page pour une marque de cosmetiques premium. Toute la page doit etre en arabe et la lecture doit se faire de droite a gauche. Je veux une ouverture forte, une section avantages, des temoignages, une FAQ, un formulaire et un bas de page.",
+  },
+  {
+    key: "multilingual",
+    title: "Multilingue fr / ar / en",
+    prompt:
+      "Genere une page marketing pour une application mobile de livraison. Langue principale : francais. La page doit aussi exister en arabe et en anglais. Pense l'experience de maniere coherente dans ces trois langues, par exemple avec un formulaire et des textes adaptes a chaque langue.",
+  },
+  {
+    key: "english",
+    title: "Anglais uniquement",
+    prompt:
+      "Generate a landing page entirely in English for a B2B analytics platform. I want a top menu, a strong opening section, benefits, key numbers, pricing, FAQ, a form and a footer. All visible text must be in English.",
+  },
+] as const;
+
+const GENERATION_LOADING_STEPS: readonly LoadingStepDefinition[] = [
+  {
+    title: "Analyse du brief",
+    description: "On interprete ton besoin, ton objectif et les contraintes principales.",
+  },
+  {
+    title: "Construction de la structure",
+    description: "On choisit les sections et l'ordre le plus convaincant pour convertir.",
+  },
+  {
+    title: "Redaction du contenu",
+    description: "On affine la promesse, le ton et les messages clefs.",
+  },
+  {
+    title: "Direction visuelle",
+    description: "On applique le style, les couleurs, la hierarchie et les details visuels.",
+  },
+  {
+    title: "Finalisation",
+    description: "On verifie la coherence du rendu avant sauvegarde de la page.",
+  },
+] as const;
+
+const GENERATION_ASSISTANT_MESSAGES = [
+  "J'analyse ton brief pour construire une page plus claire et plus convaincante.",
+  "Je cherche la meilleure combinaison entre structure, message et conversion.",
+  "Je verifie que le ton, les blocs et le bouton principal racontent bien la meme histoire.",
+  "Je peaufine les details visuels pour que la page paraisse plus pro des le premier regard.",
+  "Je finalise la page pour qu'elle soit coherente avec tes choix.",
+] as const;
 
 const PRODUCT_OPTIONS = [
   "Application mobile",
   "SaaS B2B",
-  "Patisserie artisanale",
   "Formation en ligne",
-  "Service local",
   "E-commerce",
-  "Cabinet / consultant",
   "Restaurant",
-  "Cours en ligne",
-  "Application cybersécurité",
-  OTHER_VALUE,
+  "Cabinet / consultant",
+  "Autre",
 ] as const;
 
-const PAGE_TYPE_OPTIONS = [
-  "Landing page",
-  "Waitlist",
-  "Page de vente",
-  "Page de lancement",
-  "Lead magnet",
-  "Webinar",
-  "Quiz funnel",
-  "Page de prise de rendez-vous",
-  "Preorder",
-  "Coming soon",
-  "Comparatif",
-  "Page pricing",
-  "Page portfolio",
-  "Page restaurant",
-  "Page evenement",
-  "Page recrutement",
-  "Page app mobile",
-  "Page SaaS B2B",
-  "Page coach / consultant",
-  OTHER_VALUE,
+const PAGE_TYPE_OPTIONS = ["Landing page", "Waitlist", "Page de vente", "Page pricing", "Page app mobile"] as const;
+const GOAL_OPTIONS = ["Obtenir des inscriptions", "Generer des leads", "Faire acheter", "Reserver un appel"] as const;
+const AUDIENCE_OPTIONS = ["Grand public", "B2B", "Fondateurs", "Etudiants", "PME"] as const;
+const LANGUAGE_OPTIONS = [
+  { value: "fr", label: "Francais" },
+  { value: "en", label: "Anglais" },
+  { value: "ar", label: "Arabe" },
+  { value: "es", label: "Espagnol" },
+  { value: "de", label: "Allemand" },
+  { value: "it", label: "Italien" },
+  { value: "pt", label: "Portugais" },
 ] as const;
+const STYLE_OPTIONS = ["Minimal", "Premium", "Editorial", "Bold", "Dark"] as const;
+const TONE_OPTIONS = ["Professionnel", "Rassurant", "Energique", "Premium", "Direct"] as const;
+const UI_STYLE_OPTIONS = ["Cartes", "Glass", "Dense", "Minimal", "Editorial"] as const;
+const UX_LEVEL_OPTIONS = ["Subtil", "Equilibre", "Fort"] as const;
+const HEADER_VARIANT_OPTIONS = ["Classique", "Navigation centree", "Minimal", "Editorial"] as const;
+const HEADER_STICKY_OPTIONS = ["Fixe en haut", "Statique"] as const;
+const HEADER_TRANSPARENCY_OPTIONS = ["Solide", "Transparent au debut"] as const;
+const HEADER_SCROLL_OPTIONS = ["Toujours visible", "Se revele au scroll"] as const;
+const CORNER_OPTIONS = ["Coins nets", "Coins equilibres", "Tres arrondis"] as const;
+const SECTION_OPTIONS = ["navbar", "hero", "benefits", "stats", "testimonials", "faq", "gallery", "form", "pricing", "footer"] as const;
+const IMAGE_DISPLAY_OPTIONS = ["auto", "carousel", "grid", "masonry", "stacked", "split"] as const;
 
-const GOAL_OPTIONS = [
-  "Generer des leads",
-  "Obtenir des inscriptions",
-  "Reserver un appel",
-  "Faire acheter",
-  "Faire telecharger une app",
-  "Rejoindre une waitlist",
-  "Reserver une table",
-  "Demander un devis",
-  "Repondre a un quiz",
-  "Telecharger un guide",
-  "Voir une demo",
-  OTHER_VALUE,
-] as const;
-
-const COMPLEXITY_OPTIONS = [
-  "Tres simple",
-  "Simple",
-  "Moyen",
-  "Premium detaille",
-  "Funnel complet",
-  OTHER_VALUE,
-] as const;
-
-const PAGE_LENGTH_OPTIONS = [
-  "Courte",
-  "Moyenne",
-  "Longue",
-  "Tres longue",
-  OTHER_VALUE,
-] as const;
-
-const AUDIENCE_OPTIONS = [
-  "Debutants",
-  "Experts",
-  "Etudiants",
-  "PME",
-  "Startups",
-  "Grands comptes",
-  "Parents",
-  "Freelances",
-  "Createurs",
-  "Developpeurs",
-  "RH",
-  "Responsables marketing",
-  "Restaurateurs",
-  "Acheteurs haut de gamme",
-  OTHER_VALUE,
-] as const;
-
-const AWARENESS_LEVEL_OPTIONS = [
-  "Ne connait pas le probleme",
-  "Connait le probleme",
-  "Cherche une solution",
-  "Compare des options",
-  "Pret a acheter",
-  OTHER_VALUE,
-] as const;
-
-const GEOGRAPHY_OPTIONS = [
-  "Local",
-  "National",
-  "International",
-  "Francophone",
-  "Anglophone",
-  "Bilingue",
-  OTHER_VALUE,
-] as const;
-
-const PROMISE_OPTIONS = [
-  "Gain de temps",
-  "Gain d'argent",
-  "Simplicite",
-  "Performance",
-  "Securite",
-  "Fiabilite",
-  "Luxe",
-  "Rapidité",
-  "Croissance",
-  "Serenite",
-  "Statut / prestige",
-  OTHER_VALUE,
-] as const;
-
-const MARKETING_ANGLE_OPTIONS = [
-  "Comparatif",
-  "Transformation avant/apres",
-  "Social proof",
-  "Urgence / rarete",
-  "Expertise",
-  "Produit premium",
-  "Produit accessible",
-  "Pedagogique",
-  "Storytelling",
-  "Resultats chiffres",
-  OTHER_VALUE,
-] as const;
-
-const PROOF_LEVEL_OPTIONS = [
-  "Leger",
-  "Modere",
-  "Fort",
-  "Tres fort",
-  OTHER_VALUE,
-] as const;
-
-const STYLE_OPTIONS = [
-  "Minimal",
-  "Premium",
-  "Luxe",
-  "SaaS moderne",
-  "Corporate",
-  "Editorial",
-  "Bold",
-  "Futuriste",
-  "Dark mode",
-  "Light mode",
-  "Mobile-first",
-  "App-like",
-  "High contrast",
-  "Soft / airy",
-  "Dense / information-rich",
-  OTHER_VALUE,
-] as const;
-
-const AMBIANCE_OPTIONS = [
-  "Chaleureuse",
-  "Froide / tech",
-  "Serieuse",
-  "Energique",
-  "Elegante",
-  "Fun",
-  "Creative",
-  "Sobre",
-  "Institutionnelle",
-  "Haut de gamme",
-  OTHER_VALUE,
-] as const;
-
-const UI_STYLE_OPTIONS = [
-  "Cartes",
-  "Sections plates",
-  "Glassmorphism",
-  "Bordures visibles",
-  "Ombres legeres",
-  "Ombres fortes",
-  "Interface type dashboard",
-  "Interface type magazine",
-  "UI type app mobile",
-  OTHER_VALUE,
-] as const;
-
-const CORNER_STYLE_OPTIONS = [
-  "Coins nets",
-  "Coins equilibres",
-  "Coins tres arrondis",
-  OTHER_VALUE,
-] as const;
-
-const TONE_OPTIONS = [
-  "Professionnel",
-  "Premium",
-  "Luxe",
-  "Pedagogique",
-  "Rassurant",
-  "Expert",
-  "Chaleureux",
-  "Energique",
-  "Minimal",
-  "Audacieux",
-  OTHER_VALUE,
-] as const;
-
-const COPY_STYLE_OPTIONS = [
-  "Clair et simple",
-  "Axe conversion",
-  "Storytelling",
-  "Axe benefices",
-  "Axe preuves",
-  "Tres premium",
-  "Tres direct",
-  OTHER_VALUE,
-] as const;
-
-const COLOR_MODE_OPTIONS = [
-  { value: "model", label: "Laisser le modele choisir" },
-  { value: "palette", label: "Choisir une palette suggeree" },
-  { value: "custom", label: "Choisir mes couleurs" },
-] as const;
-
-const GRADIENT_MODE_OPTIONS = [
-  { value: "model", label: "Laisser le modele choisir" },
-  { value: "with", label: "Avec gradients" },
-  { value: "without", label: "Sans gradient" },
+const UX_OPTIONS: readonly UxOptionDefinition[] = [
+  {
+    value: "progressive_disclosure",
+    label: "Revelation progressive",
+    description: "Montrer l'information petit a petit pour reduire la surcharge cognitive.",
+    category: "Engagement",
+  },
+  {
+    value: "checklist_progression",
+    label: "Checklist de progression",
+    description: "Guider l'utilisateur avec des etapes claires et visibles.",
+    category: "Engagement",
+  },
+  {
+    value: "feedback_instantane",
+    label: "Reponse immediate",
+    description: "Donner une reponse immediate aux clics, validations et actions.",
+    category: "Engagement",
+  },
+  {
+    value: "microcopy_humain",
+    label: "Petits textes rassurants",
+    description: "Ajouter des textes courts, rassurants et plus engageants.",
+    category: "Engagement",
+  },
+  {
+    value: "empty_states_intelligents",
+    label: "Ecrans vides utiles",
+    description: "Rendre les etats vides utiles et orientés vers l'action.",
+    category: "Engagement",
+  },
+  {
+    value: "personalisation_dynamique",
+    label: "Personnalisation dynamique",
+    description: "Adapter certains messages et blocs au contexte utilisateur.",
+    category: "Engagement",
+  },
+  {
+    value: "onboarding_interactif",
+    label: "Onboarding interactif",
+    description: "Aider l'utilisateur a demarrer avec guidage et activation rapide.",
+    category: "Engagement",
+  },
+  {
+    value: "social_proof_dynamique",
+    label: "Preuves de confiance visibles",
+    description: "Ajouter des preuves de confiance visibles et modernes.",
+    category: "Engagement",
+  },
+  {
+    value: "interactive_comparison",
+    label: "Comparaison interactive",
+    description: "Aider a comparer offres, packs ou alternatives sans perdre l'utilisateur.",
+    category: "Engagement",
+  },
+  {
+    value: "storytelling_sections",
+    label: "Storytelling progressif",
+    description: "Construire un fil narratif plus convaincant entre l'ouverture, les preuves et le bouton principal.",
+    category: "Engagement",
+  },
+  {
+    value: "objection_handling",
+    label: "Traitement des objections",
+    description: "Anticiper les hesitations avec reponses claires, preuves et reassurance.",
+    category: "Engagement",
+  },
+  {
+    value: "trust_reassurance_strip",
+    label: "Bandeau de reassurance",
+    description: "Mettre en avant garanties, securite, delais ou confiance des le haut de page.",
+    category: "Engagement",
+  },
+  {
+    value: "sticky_cta",
+    label: "Bouton toujours visible",
+    description: "Garder les actions importantes visibles pendant la navigation.",
+    category: "Fluidite",
+  },
+  {
+    value: "inline_validation",
+    label: "Verification instantanee des champs",
+    description: "Valider les champs en direct pour reduire la friction.",
+    category: "Fluidite",
+  },
+  {
+    value: "skeleton_loading",
+    label: "Chargement plus rassurant",
+    description: "Ameliorer la perception de vitesse avec placeholders.",
+    category: "Fluidite",
+  },
+  {
+    value: "autosave_autoprogress",
+    label: "Enregistrement automatique",
+    description: "Sauvegarder ou memoriser automatiquement la progression.",
+    category: "Fluidite",
+  },
+  {
+    value: "optimistic_ui",
+    label: "Sensation d'immediatete",
+    description: "Donner une sensation d'instantaneite sur les actions clefs.",
+    category: "Fluidite",
+  },
+  {
+    value: "smart_defaults",
+    label: "Valeurs conseillees",
+    description: "Pre-remplir intelligemment certaines valeurs pour aller plus vite.",
+    category: "Fluidite",
+  },
+  {
+    value: "section_jump_links",
+    label: "Liens d'acces rapide",
+    description: "Permettre de sauter rapidement vers prix, FAQ, formulaire ou demo.",
+    category: "Fluidite",
+  },
+  {
+    value: "sticky_summary_bar",
+    label: "Resume toujours visible",
+    description: "Afficher un resume compact des points clefs pendant la lecture.",
+    category: "Fluidite",
+  },
+  {
+    value: "adaptive_density",
+    label: "Densite adaptative",
+    description: "Aeration plus premium ou plus compacte selon le type de contenu.",
+    category: "Fluidite",
+  },
+  {
+    value: "smart_navigation_cues",
+    label: "Reperes de navigation",
+    description: "Donner des indices visuels clairs pour orienter la lecture et les actions.",
+    category: "Fluidite",
+  },
 ] as const;
 
 const PALETTE_LIBRARY: readonly PalettePreviewDefinition[] = [
   {
     value: "Bleu corporate",
     label: "Bleu corporate",
-    description: "SaaS rassurant, propre, B2B.",
+    description: "SaaS clair, propre et B2B.",
     colors: ["#0f172a", "#1d4ed8", "#38bdf8", "#f8fafc"],
   },
   {
     value: "Noir et blanc premium",
     label: "Noir et blanc premium",
-    description: "Luxe, editorial, contraste fort.",
-    colors: ["#0f172a", "#111827", "#f59e0b", "#f8fafc"],
-    isDark: true,
-  },
-  {
-    value: "Violet neon",
-    label: "Violet neon",
-    description: "Futuriste, app, startup créative.",
-    colors: ["#140f24", "#8b5cf6", "#d946ef", "#faf5ff"],
-    isDark: true,
-  },
-  {
-    value: "Rose / orange vibrant",
-    label: "Rose / orange vibrant",
-    description: "Energy, conversion, lifestyle.",
-    colors: ["#431407", "#f97316", "#ec4899", "#fff7ed"],
-  },
-  {
-    value: "Vert nature",
-    label: "Vert nature",
-    description: "Santé, bio, confiance douce.",
-    colors: ["#052e16", "#10b981", "#14b8a6", "#f0fdf4"],
-  },
-  {
-    value: "Terracotta chaleureux",
-    label: "Terracotta chaleureux",
-    description: "Artisanal, chaleureux, humain.",
-    colors: ["#7c2d12", "#c2410c", "#fb923c", "#fff7ed"],
-  },
-  {
-    value: "Bleu / cyan tech",
-    label: "Bleu / cyan tech",
-    description: "IA, automation, crédibilité tech.",
-    colors: ["#0f172a", "#0ea5a4", "#2f80ed", "#eff6ff"],
-  },
-  {
-    value: "Monochrome sobre",
-    label: "Monochrome sobre",
-    description: "Ultra minimal, très clean.",
-    colors: ["#111827", "#334155", "#94a3b8", "#f8fafc"],
-  },
-  {
-    value: "Accent unique",
-    label: "Accent unique",
-    description: "Base neutre + une couleur forte.",
-    colors: ["#0f172a", "#475569", "#2563eb", "#ffffff"],
-  },
-  {
-    value: "Ocean premium",
-    label: "Ocean premium",
-    description: "Bleu profond + aqua premium.",
-    colors: ["#082f49", "#0369a1", "#22d3ee", "#f0f9ff"],
-  },
-  {
-    value: "Sunset tropical",
-    label: "Sunset tropical",
-    description: "Coloré, solaire, mémorable.",
-    colors: ["#7c2d12", "#f97316", "#f43f5e", "#fff1f2"],
-  },
-  {
-    value: "Indigo product",
-    label: "Indigo product",
-    description: "Produit logiciel premium et dense.",
-    colors: ["#1e1b4b", "#4338ca", "#818cf8", "#eef2ff"],
-  },
-  {
-    value: "Emerald finance",
-    label: "Emerald finance",
-    description: "Fiabilité, performance, sérieux.",
-    colors: ["#052e16", "#059669", "#34d399", "#ecfdf5"],
-  },
-  {
-    value: "Graphite lime",
-    label: "Graphite lime",
-    description: "Tech contrastée, plus tranchante.",
-    colors: ["#111827", "#1f2937", "#84cc16", "#f7fee7"],
-  },
-  {
-    value: "Medical trust",
-    label: "Medical trust",
-    description: "Clinique, apaisant, très lisible.",
-    colors: ["#0f172a", "#0ea5e9", "#22c55e", "#f0fdf4"],
-  },
-  {
-    value: "Luxury aubergine",
-    label: "Luxury aubergine",
-    description: "Premium haut de gamme, editorial.",
-    colors: ["#2e1065", "#581c87", "#e9d5ff", "#faf5ff"],
-    isDark: true,
-  },
-  {
-    value: "Minimal beige",
-    label: "Minimal beige",
-    description: "Sobre, créatif, design studio.",
-    colors: ["#44403c", "#78716c", "#d6d3d1", "#fafaf9"],
-  },
-  {
-    value: "Cyber dark",
-    label: "Cyber dark",
-    description: "Cyber, sécurité, interface sombre.",
-    colors: ["#020617", "#0f172a", "#06b6d4", "#111827"],
+    description: "Monochrome premium avec fond sombre reel.",
+    colors: ["#0f172a", "#111827", "#f8fafc", "#1f2937"],
     isDark: true,
   },
   {
     value: "Midnight SaaS",
     label: "Midnight SaaS",
-    description: "Fond sombre premium, SaaS moderne, accents froids.",
+    description: "Fond sombre premium, accents froids.",
     colors: ["#020617", "#1d4ed8", "#22d3ee", "#0f172a"],
     isDark: true,
   },
   {
     value: "Teal dark studio",
     label: "Teal dark studio",
-    description: "Fond sombre teal, clean, tres produit tech.",
+    description: "Dark teal, moderne et produit.",
     colors: ["#071c1c", "#14b8a6", "#67e8f9", "#0b2525"],
     isDark: true,
   },
   {
-    value: "Graphite purple dark",
-    label: "Graphite purple dark",
-    description: "Graphite profond, violet premium, contraste assume.",
-    colors: ["#111827", "#7c3aed", "#c084fc", "#1f2937"],
-    isDark: true,
-  },
-  {
-    value: "Carbon orange dark",
-    label: "Carbon orange dark",
-    description: "Fond charbon, accents orange, energie directe.",
-    colors: ["#0a0a0a", "#f97316", "#fb923c", "#171717"],
-    isDark: true,
-  },
-  {
-    value: "Royal gold",
-    label: "Royal gold",
-    description: "Prestige, haut ticket, autorité.",
-    colors: ["#1f2937", "#92400e", "#fbbf24", "#fffbeb"],
-  },
-  {
-    value: "Fresh startup",
-    label: "Fresh startup",
-    description: "Jeune, énergique, moderne.",
-    colors: ["#0f172a", "#2563eb", "#22c55e", "#eff6ff"],
-  },
-  {
-    value: "Creator candy",
-    label: "Creator candy",
-    description: "Créateur, social, playful.",
-    colors: ["#312e81", "#8b5cf6", "#fb7185", "#fdf2f8"],
-  },
-  {
-    value: "Warm coffee",
-    label: "Warm coffee",
-    description: "Artisanal, café, humain.",
-    colors: ["#292524", "#a16207", "#f59e0b", "#fefce8"],
-  },
-  {
-    value: "Slate red",
-    label: "Slate red",
-    description: "Forte personnalité, direct response.",
-    colors: ["#1e293b", "#ef4444", "#fb7185", "#fff1f2"],
-  },
-  {
-    value: "Azure glass",
-    label: "Azure glass",
-    description: "App moderne, légère, lumineuse.",
-    colors: ["#082f49", "#0ea5e9", "#7dd3fc", "#f0f9ff"],
+    value: "Rose / orange vibrant",
+    label: "Rose / orange vibrant",
+    description: "Conversion, lifestyle, impact.",
+    colors: ["#431407", "#f97316", "#ec4899", "#fff7ed"],
   },
   {
     value: "Forest editorial",
@@ -633,340 +397,278 @@ const PALETTE_LIBRARY: readonly PalettePreviewDefinition[] = [
     colors: ["#14532d", "#15803d", "#86efac", "#f0fdf4"],
   },
   {
-    value: "Soft lavender",
-    label: "Soft lavender",
-    description: "Doux, féminin, premium soft.",
-    colors: ["#4c1d95", "#8b5cf6", "#c4b5fd", "#faf5ff"],
+    value: "Lavande product",
+    label: "Lavande product",
+    description: "Tech douce, moderne et rassurante.",
+    colors: ["#312e81", "#8b5cf6", "#c4b5fd", "#f5f3ff"],
   },
   {
-    value: "Steel orange",
-    label: "Steel orange",
-    description: "Indus, énergique, conversion.",
-    colors: ["#1f2937", "#f97316", "#fdba74", "#fff7ed"],
+    value: "Sunset luxe",
+    label: "Sunset luxe",
+    description: "Chaleureux, premium et lifestyle.",
+    colors: ["#7c2d12", "#f97316", "#fb7185", "#fff7ed"],
   },
   {
-    value: "Mint product",
-    label: "Mint product",
-    description: "Produit clean, frais, moderne.",
-    colors: ["#164e63", "#14b8a6", "#99f6e4", "#f0fdfa"],
+    value: "Sand editorial",
+    label: "Sand editorial",
+    description: "Beige chic pour marque elegante.",
+    colors: ["#44403c", "#b45309", "#f59e0b", "#fafaf9"],
   },
   {
-    value: "Cherry luxe",
-    label: "Cherry luxe",
-    description: "Mode, beauté, premium marqué.",
-    colors: ["#4c0519", "#be123c", "#fb7185", "#fff1f2"],
+    value: "Ocean neon dark",
+    label: "Ocean neon dark",
+    description: "Dark profond avec accents aqua.",
+    colors: ["#082f49", "#06b6d4", "#67e8f9", "#0f172a"],
+    isDark: true,
   },
   {
-    value: "Other",
-    label: "Autre",
-    description: "Décris ta palette personnalisée.",
-    colors: ["#0f172a", "#475569", "#94a3b8", "#f8fafc"],
+    value: "Cherry velvet",
+    label: "Cherry velvet",
+    description: "Rouge profond, luxe et impact.",
+    colors: ["#4c0519", "#e11d48", "#fb7185", "#fff1f2"],
+  },
+  {
+    value: "Jade premium",
+    label: "Jade premium",
+    description: "Vert raffine pour offre premium.",
+    colors: ["#052e2b", "#10b981", "#6ee7b7", "#ecfdf5"],
+  },
+  {
+    value: "Amber finance",
+    label: "Amber finance",
+    description: "Confiance, richesse et clarte.",
+    colors: ["#451a03", "#d97706", "#fbbf24", "#fffbeb"],
+  },
+  {
+    value: "Arctic glass",
+    label: "Arctic glass",
+    description: "Clinique, net et high-end.",
+    colors: ["#0f172a", "#38bdf8", "#bae6fd", "#f8fafc"],
+  },
+  {
+    value: "Aubergine nocturne",
+    label: "Aubergine nocturne",
+    description: "Dark violet pour produit premium.",
+    colors: ["#1e1b4b", "#7c3aed", "#c084fc", "#2e1065"],
+    isDark: true,
+  },
+  {
+    value: "Clay boutique",
+    label: "Clay boutique",
+    description: "Terre cuite elegante et artisanale.",
+    colors: ["#7c2d12", "#c2410c", "#fdba74", "#fff7ed"],
+  },
+  {
+    value: "Cobalt pulse",
+    label: "Cobalt pulse",
+    description: "Blue startup nerveux et propre.",
+    colors: ["#172554", "#2563eb", "#60a5fa", "#eff6ff"],
+  },
+  {
+    value: "Peach studio",
+    label: "Peach studio",
+    description: "Creatif, doux et tendance.",
+    colors: ["#7c2d12", "#fb923c", "#fda4af", "#fff7ed"],
+  },
+  {
+    value: "Graphite mint",
+    label: "Graphite mint",
+    description: "Sombre minimal avec mint vif.",
+    colors: ["#111827", "#10b981", "#99f6e4", "#1f2937"],
+    isDark: true,
+  },
+  {
+    value: "Indigo cosmos",
+    label: "Indigo cosmos",
+    description: "Spatial, tech et ambitieux.",
+    colors: ["#1e1b4b", "#4f46e5", "#818cf8", "#eef2ff"],
+  },
+  {
+    value: "Ruby noir",
+    label: "Ruby noir",
+    description: "Luxe sombre avec accent rubis.",
+    colors: ["#111111", "#dc2626", "#fb7185", "#1f172a"],
+    isDark: true,
+  },
+  {
+    value: "Sage minimal",
+    label: "Sage minimal",
+    description: "Calme, naturel et apaisant.",
+    colors: ["#334155", "#84cc16", "#bef264", "#f7fee7"],
+  },
+  {
+    value: "Solar flare",
+    label: "Solar flare",
+    description: "Energie, conversion et impact.",
+    colors: ["#7f1d1d", "#f59e0b", "#fde047", "#fff7ed"],
+  },
+  {
+    value: "Lagoon resort",
+    label: "Lagoon resort",
+    description: "Frais, premium et feel good.",
+    colors: ["#164e63", "#06b6d4", "#67e8f9", "#ecfeff"],
+  },
+  {
+    value: "Platinum UI",
+    label: "Platinum UI",
+    description: "Neutre premium pour interfaces chic.",
+    colors: ["#1f2937", "#6b7280", "#d1d5db", "#f9fafb"],
+  },
+  {
+    value: "Mocha grid",
+    label: "Mocha grid",
+    description: "Cafe design, chaleureux et editorial.",
+    colors: ["#3f2c23", "#8b5e3c", "#d6b38a", "#faf6f1"],
+  },
+  {
+    value: "Berry cream",
+    label: "Berry cream",
+    description: "Frais, feminin et e-commerce.",
+    colors: ["#831843", "#db2777", "#f9a8d4", "#fdf2f8"],
+  },
+  {
+    value: "Electric lime dark",
+    label: "Electric lime dark",
+    description: "Dark edgy avec accent acide.",
+    colors: ["#0f172a", "#84cc16", "#d9f99d", "#1e293b"],
+    isDark: true,
+  },
+  {
+    value: "Copper craft",
+    label: "Copper craft",
+    description: "Artisanat haut de gamme et caractere.",
+    colors: ["#431407", "#b45309", "#f59e0b", "#fef3c7"],
+  },
+  {
+    value: "Orchid glow",
+    label: "Orchid glow",
+    description: "Beauty brand, doux mais vibrant.",
+    colors: ["#581c87", "#c026d3", "#e879f9", "#fdf4ff"],
+  },
+  {
+    value: "Storm revenue",
+    label: "Storm revenue",
+    description: "B2B sombre, sobre et solide.",
+    colors: ["#0f172a", "#334155", "#38bdf8", "#1e293b"],
+    isDark: true,
+  },
+  {
+    value: "Lemon editorial",
+    label: "Lemon editorial",
+    description: "Clair, lifestyle et optimiste.",
+    colors: ["#3f3f46", "#eab308", "#fde047", "#fefce8"],
+  },
+  {
+    value: "Terracotta home",
+    label: "Terracotta home",
+    description: "Deco, habitat et authenticite.",
+    colors: ["#7c2d12", "#ea580c", "#fdba74", "#fff7ed"],
+  },
+  {
+    value: "Ice blue clinic",
+    label: "Ice blue clinic",
+    description: "Sante, confiance et purete.",
+    colors: ["#0c4a6e", "#0ea5e9", "#7dd3fc", "#f0f9ff"],
+  },
+  {
+    value: "Emerald night",
+    label: "Emerald night",
+    description: "Dark elegant avec vert luxueux.",
+    colors: ["#022c22", "#059669", "#34d399", "#064e3b"],
+    isDark: true,
+  },
+  {
+    value: "Coral startup",
+    label: "Coral startup",
+    description: "Startup moderne, jeune et visible.",
+    colors: ["#7c2d12", "#f43f5e", "#fb7185", "#fff1f2"],
+  },
+  {
+    value: "Obsidian gold",
+    label: "Obsidian gold",
+    description: "Noir luxe avec touche doree.",
+    colors: ["#0a0a0a", "#ca8a04", "#facc15", "#1c1917"],
+    isDark: true,
+  },
+  {
+    value: "Sky revenue",
+    label: "Sky revenue",
+    description: "SaaS lumineux et orienté croissance.",
+    colors: ["#1e3a8a", "#3b82f6", "#93c5fd", "#eff6ff"],
+  },
+  {
+    value: "Mint paper",
+    label: "Mint paper",
+    description: "Editorial clair avec vert frais.",
+    colors: ["#134e4a", "#14b8a6", "#99f6e4", "#f0fdfa"],
+  },
+  {
+    value: "Velvet plum",
+    label: "Velvet plum",
+    description: "Violet chic pour marque sophistiquee.",
+    colors: ["#3b0764", "#9333ea", "#d8b4fe", "#faf5ff"],
+  },
+  {
+    value: "Slate orange dark",
+    label: "Slate orange dark",
+    description: "Dark tech avec accent orange vif.",
+    colors: ["#111827", "#f97316", "#fdba74", "#1f2937"],
+    isDark: true,
+  },
+  {
+    value: "Rose champagne",
+    label: "Rose champagne",
+    description: "Elegant, feminin et premium.",
+    colors: ["#881337", "#f472b6", "#fbcfe8", "#fdf2f8"],
+  },
+  {
+    value: "Nordic pine",
+    label: "Nordic pine",
+    description: "Nordique, stable et naturel.",
+    colors: ["#164e63", "#0f766e", "#5eead4", "#f0fdfa"],
   },
 ] as const;
 
-const PALETTE_OPTIONS = PALETTE_LIBRARY.map((palette) =>
-  palette.value === "Other" ? OTHER_VALUE : palette.value,
-) as readonly string[];
-
-const HERO_LAYOUT_OPTIONS = [
-  "Centre",
-  "Split",
-  "Image a droite",
-  "Formulaire a droite",
-  OTHER_VALUE,
-] as const;
-
-const HERO_CONTENT_OPTIONS = [
-  "Titre + sous-titre",
-  "Titre + badges",
-  "Titre + chiffres cles",
-  "Titre + visuel",
-  "Titre + formulaire",
-  "Titre + preuve sociale",
-  OTHER_VALUE,
-] as const;
-
-const HERO_MEDIA_OPTIONS = [
-  "Sans media",
-  "Image produit",
-  "Image lifestyle",
-  "Mockup app",
-  "Dashboard",
-  "Illustration",
-  "Video",
-  OTHER_VALUE,
-] as const;
-
-const HERO_IMAGE_OPTIONS = [
-  { value: "none", label: "Pas d'image hero" },
-  { value: "context", label: "Image hero selon le contexte" },
-  { value: "custom", label: "Je donne le descriptif du hero" },
-] as const;
-
-const IMAGE_DESCRIPTION_OPTIONS = [
-  { value: "context", label: "Selon le contexte" },
-  { value: "custom", label: "Je donne le descriptif" },
-] as const;
-
-const GALLERY_IMAGE_COUNT_OPTIONS = ["0", "1", "2", "3", "4", "5", "6"] as const;
-
-const IMAGE_DISPLAY_OPTIONS = [
-  "Le modele choisit",
-  "Hero uniquement",
-  "Sequence d'images",
-  "Grille galerie",
-  "Style carousel",
-  "Style masonry",
-  "Split showcase",
-  "Slider plein ecran",
-  "Avant / apres",
-  OTHER_VALUE,
-] as const;
-
-const CTA_OPTIONS = [
-  "Creer un compte",
-  "Essayer gratuitement",
-  "Demander une demo",
-  "Commencer maintenant",
-  "Prendre rendez-vous",
-  "Recevoir une soumission",
-  "Commander maintenant",
-  "Rejoindre la waitlist",
-  "Voir les tarifs",
-  OTHER_VALUE,
-] as const;
-
-const SECONDARY_CTA_OPTIONS = [
-  "En savoir plus",
-  "Voir la demo",
-  "Voir les temoignages",
-  "Voir les prix",
-  "Decouvrir le produit",
-  OTHER_VALUE,
-] as const;
-
-const FORM_GOAL_OPTIONS = [
-  "Inscription",
-  "Reservation",
-  "Demande de devis",
-  "Contact",
-  "Precommande",
-  "Audit gratuit",
-  "Candidature",
-  OTHER_VALUE,
-] as const;
-
-const FORM_FRICTION_OPTIONS = [
-  "Tres faible",
-  "Faible",
-  "Moyen",
-  "Qualificatif",
-  OTHER_VALUE,
-] as const;
-
-const FUNNEL_STAGE_OPTIONS = [
-  "Decouverte",
-  "Consideration",
-  "Conversion",
-  "Activation",
-  "Upsell",
-  "Reassurance",
-  OTHER_VALUE,
-] as const;
-
-const OFFER_TYPE_OPTIONS = [
-  "Gratuit",
-  "Freemium",
-  "Abonnement",
-  "One-shot",
-  "Sur devis",
+const PALETTE_CATEGORY_ORDER: readonly PaletteCategory[] = [
+  "Dark",
+  "Neutre",
+  "Flashy",
   "Premium",
-  OTHER_VALUE,
+  "Nature",
+  "Tech",
 ] as const;
 
-const URGENCY_OPTIONS = [
-  "Aucune",
-  "Places limitees",
-  "Offre temporaire",
-  "Lancement",
-  "Compte a rebours",
-  OTHER_VALUE,
-] as const;
-
-const LANGUAGE_OPTIONS = [
-  "Francais",
-  "Anglais",
-  "Bilingue",
-  OTHER_VALUE,
-] as const;
-
-const TARGET_DEVICE_OPTIONS = [
-  "Mobile-first",
-  "Desktop-first",
-  "Responsive equilibre",
-  OTHER_VALUE,
-] as const;
-
-const DENSITY_OPTIONS = [
-  "Aeree",
-  "Normale",
-  "Dense",
-  OTHER_VALUE,
-] as const;
-
-const ACCESSIBILITY_OPTIONS = [
-  "Contraste fort",
-  "Tres lisible",
-  "Police plus grande",
-  "Interface simple",
-  OTHER_VALUE,
-] as const;
-
-const HEADER_STYLE_OPTIONS = [
-  "Discret",
-  "Tres visible",
-  "Minimal",
-  "Sticky",
-  "Avec menu mobile premium",
-  OTHER_VALUE,
-] as const;
-
-const FOOTER_STYLE_OPTIONS = [
-  "Minimal",
-  "Riche",
-  "Tres simple",
-  "Informations legales visibles",
-  OTHER_VALUE,
-] as const;
-
-const SECTION_OPTIONS = [
-  "navbar",
-  "hero",
-  "benefits",
-  "trust_bar",
-  "stats",
-  "form",
-  "testimonials",
-  "faq",
-  "cta_banner",
-  "comparison",
-  "gallery",
-  "video",
-  "rich_text",
-  "countdown",
-  "pricing",
-  "logo_cloud",
-  "steps",
-  "footer",
-] as const;
-
-const ADVANCED_SECTION_OPTIONS = [
-  "Objections / reponses",
-  "Garanties",
-  "Cas d'usage",
-  "Pour qui / pas pour qui",
-  "Timeline",
-  "Avant / apres",
-  "Methodologie",
-  "Fonctionnement en 3 etapes",
-  "Logos partenaires",
-  "Bonus inclus",
-  "Limitations assumees",
-  "Equipe / fondateur",
-] as const;
-
-const PROOF_ELEMENT_OPTIONS = [
-  "Avis clients",
-  "Temoignages video",
-  "Notes moyennes",
-  "Logos clients",
-  "Nombre d'utilisateurs",
-  "Certifications",
-  "Recompenses",
-  "Avant / apres",
-  "Etudes de cas",
-] as const;
-
-const FORM_FIELD_OPTIONS = [
-  "Nom",
-  "Email",
-  "Telephone",
-  "Entreprise",
-  "Taille d'equipe",
-  "Budget",
-  "Besoin principal",
-  "Date souhaitee",
-  "Type d'offre",
-  "Message libre",
-] as const;
-
-const ANIMATION_OPTIONS = [
-  "Compteurs animes",
-  "Barres de progression animees",
-  "Fade-in sections",
-  "Slide-up sections",
-  "Stagger sur cartes",
-  "Hover cards",
-  "Hover buttons",
-  "Carousel autoplay",
-  "Progression de formulaire",
-] as const;
-
-const SPECIALIZED_FOCUS_OPTIONS = [
-  "Dashboard mockup",
-  "Integrations",
-  "ROI",
-  "Cas client",
-  "Plats signatures",
-  "Ambiance restaurant",
-  "Ingredients premium",
-  "Menu",
-  "Reservation",
-  "Certifications",
-  "Quiz",
-  "Securite / confiance",
-  "Parcours patient",
-  "Equipe",
-  "Packaging",
-] as const;
+const PALETTE_CATEGORY_DESCRIPTIONS: Record<PaletteCategory, string> = {
+  Dark: "Couleurs sombres, elegantes et bien contrastees.",
+  Neutre: "Couleurs propres, sobries et polyvalentes.",
+  Flashy: "Couleurs vives, visibles et orientees conversion.",
+  Premium: "Luxe, editorial et image de marque raffinee.",
+  Nature: "Tons organiques, frais et apaisants.",
+  Tech: "Couleurs modernes pour un service innovant.",
+};
 
 const DEFAULT_GUIDED_STATE: GuidedPromptState = {
   websiteName: "",
   businessDescription: "",
   product: "Application mobile",
-  productOther: "",
   pageType: "Landing page",
-  pageTypeOther: "",
   goal: "Obtenir des inscriptions",
-  goalOther: "",
-  complexity: "Moyen",
-  complexityOther: "",
-  pageLength: "Moyenne",
-  pageLengthOther: "",
   audience: "Grand public",
-  audienceOther: "",
-  awarenessLevel: "Cherche une solution",
-  awarenessLevelOther: "",
-  geography: "Francophone",
-  geographyOther: "",
-  promise: "Simplicite",
-  promiseOther: "",
-  marketingAngle: "Axe benefices",
-  marketingAngleOther: "",
-  proofLevel: "Modere",
-  proofLevelOther: "",
-  style: "Mobile-first",
-  styleOther: "",
-  ambiance: "Energique",
-  ambianceOther: "",
-  uiStyle: "Cartes",
-  uiStyleOther: "",
-  cornerStyle: "Coins equilibres",
-  cornerStyleOther: "",
+  displayLanguage: "fr",
+  multilingualMode: false,
+  supportedLanguages: "fr",
+  directionMode: "auto",
+  translationContext: "",
+  style: "Minimal",
   tone: "Professionnel",
-  toneOther: "",
-  copyStyle: "Clair et simple",
-  copyStyleOther: "",
+  uiStyle: "Cartes",
+  uxLevel: "Equilibre",
+  uxOptions: ["feedback_instantane", "sticky_cta", "inline_validation"],
+  headerVariant: "Classique",
+  headerSticky: "Fixe en haut",
+  headerTransparency: "Solide",
+  headerScrollBehavior: "Toujours visible",
+  cornerStyle: "Coins equilibres",
   colorMode: "model",
   gradientMode: "model",
   palette: "Bleu corporate",
@@ -976,196 +678,218 @@ const DEFAULT_GUIDED_STATE: GuidedPromptState = {
   customAccent: "#38bdf8",
   customBackground: "#f8fafc",
   customText: "#0f172a",
-  heroLayout: "Split",
-  heroLayoutOther: "",
-  heroContent: "Titre + visuel",
-  heroContentOther: "",
-  heroMedia: "Image produit",
-  heroMediaOther: "",
+  sections: ["navbar", "hero", "benefits", "testimonials", "faq", "form", "footer"],
+  cta: "Creer un compte",
   heroImageMode: "context",
   heroImageCustomDescription: "",
-  galleryImageCount: "1",
-  imageDisplay: "Le modele choisit",
-  imageDisplayOther: "",
+  galleryImageCount: "0",
+  imageDisplay: "auto",
   galleryDescriptionMode: "context",
   galleryCustomDescription: "",
-  cta: "Creer un compte",
-  ctaOther: "",
-  secondaryCta: "En savoir plus",
-  secondaryCtaOther: "",
-  formGoal: "Inscription",
-  formGoalOther: "",
-  formFriction: "Faible",
-  formFrictionOther: "",
-  funnelStage: "Conversion",
-  funnelStageOther: "",
-  offerType: "Freemium",
-  offerTypeOther: "",
-  urgency: "Aucune",
-  urgencyOther: "",
-  language: "Francais",
-  languageOther: "",
-  targetDevice: "Mobile-first",
-  targetDeviceOther: "",
-  density: "Normale",
-  densityOther: "",
-  accessibility: "Tres lisible",
-  accessibilityOther: "",
-  headerStyle: "Sticky",
-  headerStyleOther: "",
-  footerStyle: "Riche",
-  footerStyleOther: "",
-  sections: ["navbar", "hero", "benefits", "testimonials", "faq", "form", "footer"],
-  sectionsOther: "",
-  advancedSections: [],
-  advancedSectionsOther: "",
-  requiredSections: [],
-  requiredSectionsOther: "",
-  forbiddenSections: [],
-  forbiddenSectionsOther: "",
-  proofElements: ["Avis clients", "Nombre d'utilisateurs"],
-  proofElementsOther: "",
-  formFields: ["Nom", "Email"],
-  formFieldsOther: "",
-  animationTypes: [],
-  animationTypesOther: "",
-  specializedFocus: [],
-  specializedFocusOther: "",
-  referenceVisual: "",
-  avoidThings: "",
-  promiseSentence: "",
-  mainObjection: "",
-  differentiator: "",
-  emotion: "",
-  quickAction: "",
   notes: "",
 };
 
 const GUIDED_STEPS = [
-  {
-    label: "Projet",
-    title: "Cadrer la page",
-    description: "Definis l'offre, l'objectif, l'audience et le niveau de complexite attendu.",
-  },
-  {
-    label: "Message",
-    title: "Clarifier le message",
-    description: "Travaille la promesse, l'angle marketing, les objections et le ton editorial.",
-  },
-  {
-    label: "Design",
-    title: "Designer la direction visuelle",
-    description: "Choisis l'ambiance, la forme, la palette et l'intention graphique generale.",
-  },
-  {
-    label: "Structure",
-    title: "Composer la page",
-    description: "Definis le hero, les visuels, les sections et les blocs indispensables.",
-  },
-  {
-    label: "Conversion",
-    title: "Optimiser la conversion",
-    description: "Configure CTA, formulaire, preuves sociales, funnel et animations.",
-  },
-  {
-    label: "Finition",
-    title: "Finaliser l'experience",
-    description: "Ajuste les details techniques, les contraintes et relis le brief final.",
-  },
+  { id: "project", title: "Projet" },
+  { id: "message", title: "Message" },
+  { id: "design", title: "Design" },
+  { id: "ux", title: "UX" },
+  { id: "structure", title: "Structure" },
 ] as const;
 
-const CAPTURIA_COLORS = {
-  navy: "#0f172a",
-  navySoft: "#1e293b",
-  teal: "#14b8a6",
-  tealDark: "#0ea5a4",
-  white: "#ffffff",
-  surface: "#f8fafc",
-  border: "#e2e8f0",
-  textMuted: "#64748b",
-  success: "#22c55e",
-  error: "#ef4444",
-} as const;
+const STEP_HELP: Record<
+  (typeof GUIDED_STEPS)[number]["id"],
+  { title: string; description: string; action: string; example: string }
+> = {
+  project: {
+    title: "Cadre du projet",
+    description: "Definis le produit, le type de page et l'objectif principal pour cadrer la generation.",
+    action: "Commence simplement par expliquer ce que tu vends et ce que tu veux obtenir.",
+    example: "Exemple: Je vends une application pour aider les restaurants a gerer les reservations.",
+  },
+  message: {
+    title: "Message et audience",
+    description: "Precise le ton, la cible, la langue et le bouton principal pour orienter les textes.",
+    action: "Dis a qui la page parle et ce que tu veux que le visiteur fasse.",
+    example: "Exemple: cible PME, ton rassurant, bouton principal 'Demander une demo'.",
+  },
+  design: {
+    title: "Direction visuelle",
+    description: "Choisis le style, les couleurs, le menu du haut et les details visuels.",
+    action: "Si tu n'es pas sur, garde quelque chose de simple puis personnalise les couleurs ensuite.",
+    example: "Exemple: style premium, menu fixe en haut, couleurs sombres elegantes.",
+  },
+  ux: {
+    title: "Experience de creation",
+    description: "Indique les optimisations UX que le modele doit privilegier dans la page.",
+    action: "Choisis seulement quelques options utiles; inutile de tout activer au debut.",
+    example: "Exemple: reponse immediate + bouton toujours visible + valeurs conseillees.",
+  },
+  structure: {
+    title: "Structure et medias",
+    description: "Selectionne les sections, les images et la forme generale de la page.",
+    action: "Ajoute uniquement les blocs necessaires a la conversion pour garder une page claire.",
+    example: "Exemple: ouverture, avantages, temoignages, questions frequentes, formulaire, bas de page.",
+  },
+};
 
-const GUIDED_STEP_ICONS = [
-  WorkspacesRoundedIcon,
-  CampaignRoundedIcon,
-  PaletteRoundedIcon,
-  ViewQuiltRoundedIcon,
-  QueryStatsRoundedIcon,
-  TuneRoundedIcon,
+const STARTER_PRESETS: readonly StarterPreset[] = [
+  {
+    key: "saas",
+    title: "SaaS simple",
+    description: "Pour un outil en ligne ou un logiciel.",
+    apply: {
+      websiteName: "NovaFlow",
+      businessDescription: "Un logiciel simple pour centraliser les taches, automatiser les relances et suivre les performances d'une equipe.",
+      product: "SaaS B2B",
+      pageType: "Landing page",
+      goal: "Generer des leads",
+      audience: "PME",
+      tone: "Professionnel",
+      cta: "Demander une demo",
+    },
+  },
+  {
+    key: "formation",
+    title: "Formation en ligne",
+    description: "Pour vendre un cours, un coaching ou une methode.",
+    apply: {
+      websiteName: "Academie Impact",
+      businessDescription: "Une formation pratique pour apprendre une competence rapidement avec videos, exercices et accompagnement.",
+      product: "Formation en ligne",
+      pageType: "Page de vente",
+      goal: "Faire acheter",
+      audience: "Etudiants",
+      tone: "Rassurant",
+      cta: "Voir le programme",
+    },
+  },
+  {
+    key: "app",
+    title: "Application mobile",
+    description: "Pour presenter une app et obtenir des inscriptions.",
+    apply: {
+      websiteName: "PulseFit",
+      businessDescription: "Une application mobile qui aide a suivre ses habitudes, rester motive et atteindre ses objectifs jour apres jour.",
+      product: "Application mobile",
+      pageType: "Page app mobile",
+      goal: "Obtenir des inscriptions",
+      audience: "Grand public",
+      tone: "Energique",
+      cta: "Telecharger l'application",
+    },
+  },
 ] as const;
-
-const GUIDED_HIGHLIGHTS = [
-  { label: "Style", value: "Capturia SaaS" },
-  { label: "Output", value: "JSON valide" },
-  { label: "Focus", value: "Conversion" },
-  { label: "Apercu", value: "En direct" },
-] as const;
-
-interface PreviewTheme {
-  accent: string;
-  accentSoft: string;
-  secondaryAccent: string;
-  background: string;
-  surface: string;
-  surfaceAlt: string;
-  text: string;
-  textMuted: string;
-  dark: boolean;
-  showHeroMedia: boolean;
-  galleryDisplay: string;
-  galleryCount: number;
-  uiStyle: string;
-  density: string;
-  titleStyle: "editorial" | "display" | "minimal";
-  useGradient: boolean;
-  cornerRadius: number;
-  pillRadius: number;
-  chipRadius: number;
-  smallRadius: number;
-}
-
-function slugToLabel(section: string) {
-  return section
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 function findPaletteDefinition(value: string) {
-  const normalized = value.trim().toLowerCase();
-  return PALETTE_LIBRARY.find((palette) => palette.value.toLowerCase() === normalized);
+  return PALETTE_LIBRARY.find((palette) => palette.value.toLowerCase() === value.trim().toLowerCase());
+}
+
+function inferPaletteCategory(palette: PalettePreviewDefinition): PaletteCategory {
+  const normalized = `${palette.value} ${palette.label} ${palette.description}`.toLowerCase();
+
+  if (palette.isDark) return "Dark";
+  if (/(vibrant|sunset|cherry|peach|solar|berry|coral|orchid|rose|electric|flare|lime)/.test(normalized)) {
+    return "Flashy";
+  }
+  if (/(forest|jade|sage|lagoon|mint|emerald|nordic|pine|teal|ocean|nature)/.test(normalized)) {
+    return "Nature";
+  }
+  if (/(corporate|saas|product|cobalt|arctic|indigo|storm|sky|clinic|revenue|tech|ui)/.test(normalized)) {
+    return "Tech";
+  }
+  if (/(premium|luxe|editorial|platinum|champagne|velvet|obsidian|sand|mocha|clay|copper|ruby|boutique)/.test(normalized)) {
+    return "Premium";
+  }
+
+  return "Neutre";
 }
 
 function resolveCornerStyleToken(value: string): "sharp" | "balanced" | "rounded" {
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized.includes("net")) {
-    return "sharp";
-  }
-
-  if (normalized.includes("arrond")) {
-    return "rounded";
-  }
-
+  const normalized = value.toLowerCase();
+  if (normalized.includes("net")) return "sharp";
+  if (normalized.includes("arrond")) return "rounded";
   return "balanced";
 }
 
+function resolveHeaderVariantToken(value: string) {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("centre")) return "centered";
+  if (normalized.includes("editorial")) return "editorial";
+  if (normalized.includes("minimal")) return "minimal";
+  return "classic";
+}
+
+function resolveHeaderSticky(value: string) {
+  return value.toLowerCase().includes("sticky");
+}
+
+function resolveHeaderTransparency(value: string) {
+  return value.toLowerCase().includes("transparent");
+}
+
+function resolveHeaderScrollBehavior(value: string) {
+  return value.toLowerCase().includes("scroll");
+}
+
+function normalizeLocaleToken(value: string) {
+  const [language, region] = value.trim().replace(/_/g, "-").split("-");
+  if (!language) return "";
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
+}
+
+function parseSupportedLocales(value: string, fallbackLocale: string) {
+  const locales = value
+    .split(/[,;\n]/)
+    .map((item) => normalizeLocaleToken(item))
+    .filter(Boolean);
+
+  return Array.from(new Set(locales.length > 0 ? locales : [fallbackLocale]));
+}
+
+function inferRtlFromLocale(locale: string) {
+  return ["ar", "fa", "he", "ur"].includes(normalizeLocaleToken(locale).split("-")[0]);
+}
+
+function resolveDirection(form: GuidedPromptState): "ltr" | "rtl" {
+  if (form.directionMode === "rtl") return "rtl";
+  if (form.directionMode === "ltr") return "ltr";
+  return inferRtlFromLocale(form.displayLanguage) ? "rtl" : "ltr";
+}
+
+function buildLocalizationConstraint(form: GuidedPromptState): LocalizationConstraintPayload {
+  const locale = normalizeLocaleToken(form.displayLanguage) || "fr";
+  const supportedLocales = form.multilingualMode
+    ? parseSupportedLocales(form.supportedLanguages, locale)
+    : [locale];
+  const direction = resolveDirection(form);
+
+  return {
+    locale,
+    direction,
+    isRTL: direction === "rtl",
+    supportedLocales,
+    ...(form.translationContext.trim() ? { translationContext: form.translationContext.trim() } : {}),
+    translationsEnabled: form.multilingualMode && supportedLocales.length > 1,
+  };
+}
+
+function describeUxOption(optionValue: string) {
+  return UX_OPTIONS.find((option) => option.value === optionValue)?.label ?? optionValue;
+}
+
 function buildThemeConstraint(form: GuidedPromptState): ThemeConstraintPayload | null {
-  const cornerStyle = resolveCornerStyleToken(resolveChoice(form.cornerStyle, form.cornerStyleOther));
+  const cornerStyle = resolveCornerStyleToken(form.cornerStyle);
 
   if (form.colorMode === "palette") {
-    const paletteDefinition = findPaletteDefinition(resolveChoice(form.palette, form.paletteOther));
-
-    if (!paletteDefinition || paletteDefinition.value === "Other") {
-      return null;
-    }
+    const paletteDefinition = findPaletteDefinition(form.palette);
+    if (!paletteDefinition) return null;
 
     const [base, accent, secondary, surface] = paletteDefinition.colors;
     const background = paletteDefinition.isDark ? base : surface;
     const textPrimary = paletteDefinition.isDark ? "#ffffff" : base;
     const textSecondary = paletteDefinition.isDark ? "#cbd5e1" : "#475569";
-    const muted = paletteDefinition.isDark ? accent : surface;
+    const muted = paletteDefinition.isDark ? surface : surface;
 
     return {
       name: paletteDefinition.value,
@@ -1183,20 +907,17 @@ function buildThemeConstraint(form: GuidedPromptState): ThemeConstraintPayload |
   }
 
   if (form.colorMode === "custom") {
-    const background = form.customBackground || "#ffffff";
-    const textPrimary = form.customText || "#0f172a";
-
     return {
       name: "custom_user_palette",
       cornerStyle,
       palette: {
-        primary: form.customPrimary || "#2563eb",
-        secondary: form.customSecondary || form.customAccent || form.customPrimary || "#1d4ed8",
-        background,
-        textPrimary,
-        textSecondary: textPrimary,
-        accent: form.customAccent || form.customPrimary || "#38bdf8",
-        muted: background,
+        primary: form.customPrimary,
+        secondary: form.customSecondary || form.customAccent || form.customPrimary,
+        background: form.customBackground,
+        textPrimary: form.customText,
+        textSecondary: form.customText,
+        accent: form.customAccent || form.customPrimary,
+        muted: form.customBackground,
       },
     };
   }
@@ -1204,1496 +925,761 @@ function buildThemeConstraint(form: GuidedPromptState): ThemeConstraintPayload |
   return null;
 }
 
-function isDarkHexColor(color: string) {
-  const normalized = color.trim();
-
-  if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(normalized)) {
-    return false;
-  }
-
-  const hex = normalized.length === 4
-    ? `#${normalized[1]}${normalized[1]}${normalized[2]}${normalized[2]}${normalized[3]}${normalized[3]}`
-    : normalized;
-  const red = parseInt(hex.slice(1, 3), 16);
-  const green = parseInt(hex.slice(3, 5), 16);
-  const blue = parseInt(hex.slice(5, 7), 16);
-  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-
-  return luminance < 0.5;
-}
-
-function inferPreviewTheme(form: GuidedPromptState): PreviewTheme {
-  const style = resolveChoice(form.style, form.styleOther).toLowerCase();
-  const ambiance = resolveChoice(form.ambiance, form.ambianceOther).toLowerCase();
-  const heroMedia = resolveChoice(form.heroMedia, form.heroMediaOther).toLowerCase();
-  const galleryDisplay = resolveChoice(form.imageDisplay, form.imageDisplayOther);
-  const palette = resolveChoice(form.palette, form.paletteOther).toLowerCase();
-  const paletteDefinition = findPaletteDefinition(resolveChoice(form.palette, form.paletteOther));
-  const uiStyle = resolveChoice(form.uiStyle, form.uiStyleOther);
-  const density = resolveChoice(form.density, form.densityOther);
-  const cornerStyle = resolveChoice(form.cornerStyle, form.cornerStyleOther).toLowerCase();
-  const inferredDark =
-    style.includes("dark") ||
-    style.includes("futur") ||
-    ambiance.includes("froide") ||
-    ambiance.includes("serieuse");
-  let dark = inferredDark;
-
-  let accent: string = CAPTURIA_COLORS.teal;
-  let secondaryAccent: string = "#2f80ed";
-  let background: string = dark ? "#0f172a" : CAPTURIA_COLORS.surface;
-  let surface: string = dark ? "#111827" : CAPTURIA_COLORS.white;
-  let surfaceAlt: string = dark ? "#162033" : "#f1f5f9";
-  let text: string = dark ? "rgba(255,255,255,0.94)" : CAPTURIA_COLORS.navy;
-  let textMuted: string = dark ? "rgba(255,255,255,0.62)" : CAPTURIA_COLORS.textMuted;
-
-  if (form.colorMode === "custom") {
-    dark = isDarkHexColor(form.customBackground || background);
-    accent = form.customPrimary;
-    secondaryAccent = form.customSecondary || form.customAccent || form.customPrimary;
-    background = form.customBackground || background;
-    surface = dark ? alpha(form.customBackground || "#0f172a", 0.92) : CAPTURIA_COLORS.white;
-    surfaceAlt = alpha(form.customPrimary || CAPTURIA_COLORS.teal, dark ? 0.14 : 0.08);
-    text = form.customText || text;
-    textMuted = alpha(form.customText || "#0f172a", dark ? 0.72 : 0.62);
-  } else if (form.colorMode === "palette") {
-    if (paletteDefinition) {
-      const [base, accentColor, secondaryColor, surfaceColor] = paletteDefinition.colors;
-      dark = Boolean(paletteDefinition.isDark);
-      accent = accentColor;
-      secondaryAccent = secondaryColor;
-      background = dark ? base : surfaceColor;
-      surface = dark ? surfaceColor : "#ffffff";
-      surfaceAlt = dark ? alpha(accentColor, 0.16) : alpha(accentColor, 0.10);
-      text = dark ? "rgba(255,255,255,0.94)" : base;
-      textMuted = dark ? "rgba(255,255,255,0.64)" : alpha(base, 0.66);
-    } else if (palette.includes("noir") || palette.includes("premium")) {
-      dark = true;
-      accent = "#f59e0b";
-      secondaryAccent = "#d97706";
-      background = "#0f172a";
-      surface = "#111827";
-      surfaceAlt = "#1f2937";
-      text = "rgba(255,255,255,0.94)";
-      textMuted = "rgba(255,255,255,0.64)";
-    } else if (palette.includes("violet")) {
-      dark = true;
-      accent = "#8b5cf6";
-      secondaryAccent = "#d946ef";
-      background = dark ? "#140f24" : "#faf5ff";
-      surface = dark ? "#1b1530" : "#ffffff";
-      surfaceAlt = dark ? "#261f40" : "#f3e8ff";
-      text = dark ? "rgba(255,255,255,0.94)" : "#2e1065";
-      textMuted = dark ? "rgba(255,255,255,0.62)" : "#7c3aed";
-    } else if (palette.includes("rose") || palette.includes("orange") || palette.includes("sunset")) {
-      accent = "#f97316";
-      secondaryAccent = "#ec4899";
-      background = dark ? "#1f1720" : "#fff7ed";
-      surface = dark ? "#2a1c24" : "#ffffff";
-      surfaceAlt = dark ? "#3b2431" : "#ffe4e6";
-      text = dark ? "rgba(255,255,255,0.94)" : "#431407";
-      textMuted = dark ? "rgba(255,255,255,0.64)" : "#9a3412";
-    } else if (palette.includes("vert")) {
-      accent = "#10b981";
-      secondaryAccent = "#14b8a6";
-      background = dark ? "#0d1f1b" : "#f0fdf4";
-      surface = dark ? "#112823" : "#ffffff";
-      surfaceAlt = dark ? "#183630" : "#dcfce7";
-      text = dark ? "rgba(255,255,255,0.94)" : "#052e16";
-      textMuted = dark ? "rgba(255,255,255,0.66)" : "#166534";
-    } else if (palette.includes("cyan") || palette.includes("bleu")) {
-      accent = "#0ea5a4";
-      secondaryAccent = "#2f80ed";
-      background = dark ? "#0f172a" : "#f8fafc";
-      surface = dark ? "#111827" : "#ffffff";
-      surfaceAlt = dark ? "#162033" : "#eff6ff";
-      text = dark ? "rgba(255,255,255,0.94)" : CAPTURIA_COLORS.navy;
-      textMuted = dark ? "rgba(255,255,255,0.64)" : CAPTURIA_COLORS.textMuted;
-    }
-  }
-
-  const useGradient = form.gradientMode === "with"
-    ? true
-    : form.gradientMode === "without"
-      ? false
-      : true;
-
-  const titleStyle =
-    style.includes("editorial") || style.includes("luxe")
-      ? "editorial"
-      : style.includes("bold") || style.includes("futur")
-        ? "display"
-        : "minimal";
-
-  const cornerRadius = cornerStyle.includes("tres arrondis")
-    ? 10
-    : cornerStyle.includes("nets")
-      ? 0
-      : 4;
-
-  return {
-    accent,
-    accentSoft: alpha(accent, 0.14),
-    secondaryAccent,
-    background,
-    surface,
-    surfaceAlt,
-    text,
-    textMuted,
-    dark,
-    showHeroMedia: form.heroImageMode !== "none" && heroMedia !== "sans media",
-    galleryDisplay,
-    galleryCount: Number(form.galleryImageCount) || 0,
-    uiStyle,
-    density,
-    titleStyle,
-    useGradient,
-    cornerRadius,
-    pillRadius: cornerRadius <= 0 ? 0 : cornerRadius >= 10 ? 28 : 14,
-    chipRadius: cornerRadius <= 0 ? 0 : cornerRadius >= 10 ? 22 : 10,
-    smallRadius: cornerRadius <= 0 ? 0 : cornerRadius >= 10 ? 20 : 8,
-  };
-}
-
-function PreviewBlock({
-  children,
-  dark = false,
-  uiStyle,
-  radius = 20,
-}: {
-  children: ReactNode;
-  dark?: boolean;
-  uiStyle?: string;
-  radius?: number;
-}) {
-  const lowerUiStyle = (uiStyle ?? "").toLowerCase();
-  const glassy = lowerUiStyle.includes("glass");
-  const strongBorders = lowerUiStyle.includes("bordures");
-  const heavyShadow = lowerUiStyle.includes("ombres fortes");
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, md: 2.5 },
-        borderRadius: `${radius}px`,
-        border: "1px solid",
-        borderColor: strongBorders
-          ? dark
-            ? alpha("#ffffff", 0.18)
-            : alpha(CAPTURIA_COLORS.navy, 0.16)
-          : dark
-            ? alpha("#ffffff", 0.08)
-            : CAPTURIA_COLORS.border,
-        bgcolor: glassy
-          ? dark
-            ? alpha("#162033", 0.72)
-            : alpha("#ffffff", 0.72)
-          : dark
-            ? "#162033"
-            : CAPTURIA_COLORS.white,
-        backdropFilter: glassy ? "blur(16px)" : "none",
-        boxShadow: dark
-          ? heavyShadow
-            ? "0 28px 54px rgba(15,23,42,0.28)"
-            : "0 20px 40px rgba(15,23,42,0.22)"
-          : heavyShadow
-            ? "0 22px 48px rgba(15,23,42,0.12)"
-            : "0 14px 34px rgba(15,23,42,0.05)",
-      }}
-    >
-      {children}
-    </Paper>
-  );
-}
-
-function PageSkeletonPreview({
-  sections,
-  theme,
-  websiteName,
-  viewport = "desktop",
-}: {
-  sections: string[];
-  theme: PreviewTheme;
-  websiteName: string;
-  viewport?: "desktop" | "mobile";
-}) {
-  const bg = theme.background;
-  const pageSurface = theme.surface;
-  const textColor = theme.text;
-  const subColor = theme.textMuted;
-  const blockRadius = theme.cornerRadius * 4;
-  const sectionGap = theme.density.toLowerCase().includes("dense") ? 1.5 : 2.5;
-  const cardBg = theme.surfaceAlt;
-  const heroGradient = theme.useGradient
-    ? theme.dark
-      ? `linear-gradient(135deg, ${alpha(theme.accent, 0.18)}, ${alpha(theme.secondaryAccent, 0.12)}, rgba(255,255,255,0.02))`
-      : `linear-gradient(135deg, ${theme.accentSoft}, ${alpha(theme.secondaryAccent, 0.12)}, rgba(15,23,42,0.03))`
-    : theme.dark
-      ? alpha(theme.accent, 0.14)
-      : theme.accentSoft;
-  const headingFontSize =
-    theme.titleStyle === "display" ? { xs: "2rem", md: "2.6rem" } : theme.titleStyle === "editorial" ? { xs: "2rem", md: "2.35rem" } : { xs: "1.7rem", md: "2.1rem" };
-  const headingWeight =
-    theme.titleStyle === "display" ? 900 : theme.titleStyle === "editorial" ? 800 : 700;
-  const headingLetterSpacing =
-    theme.titleStyle === "display" ? "-0.05em" : theme.titleStyle === "editorial" ? "-0.03em" : "-0.02em";
-  const brandName = websiteName.trim() || "Mon Site";
-  const isMobile = viewport === "mobile";
-  const mobileBlockRadius = Math.max(theme.smallRadius + 4, 10);
-  const mobileSectionGap = 1.15;
-
-  function renderSection(section: string) {
-    if (section === "navbar") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Stack alignItems="center" direction="row" justifyContent="space-between" spacing={isMobile ? 1 : 2}>
-            <Stack alignItems="center" direction="row" spacing={1.25}>
-              <Box
-                sx={{
-                  width: isMobile ? 28 : 38,
-                  height: isMobile ? 28 : 38,
-                  borderRadius: `${theme.smallRadius}px`,
-                  bgcolor: theme.accentSoft,
-                }}
-              />
-              <Typography
-                sx={{
-                  color: textColor,
-                  fontWeight: 900,
-                  fontSize: isMobile ? 15 : undefined,
-                  maxWidth: isMobile ? 110 : "none",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                variant="h6"
-              >
-                {brandName}
-              </Typography>
-            </Stack>
-            {isMobile ? (
-              <Box
-                sx={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: `${theme.smallRadius}px`,
-                  border: "1px solid",
-                  borderColor: theme.dark ? alpha("#fff", 0.12) : CAPTURIA_COLORS.border,
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <Stack spacing={0.4}>
-                  {[1, 2, 3].map((item) => (
-                    <Box
-                      key={item}
-                      sx={{
-                          width: 12,
-                          height: 1.6,
-                        borderRadius: 999,
-                        bgcolor: textColor,
-                      }}
-                    />
-                  ))}
-                </Stack>
-              </Box>
-            ) : (
-              <>
-                <Stack direction="row" spacing={1}>
-                  {[1, 2, 3].map((item) => (
-                    <Skeleton
-                      key={item}
-                      sx={{
-                        bgcolor: theme.dark ? alpha("#fff", 0.12) : undefined,
-                        borderRadius: `${theme.chipRadius}px`,
-                      }}
-                      variant="rounded"
-                      width={72}
-                      height={16}
-                    />
-                  ))}
-                </Stack>
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    borderRadius: `${theme.pillRadius}px`,
-                    bgcolor: theme.secondaryAccent,
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 13,
-                  }}
-                >
-                  CTA
-                </Box>
-              </>
-            )}
-          </Stack>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "hero") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: isMobile
-                ? "1fr"
-                : { xs: "1fr", md: theme.showHeroMedia ? "1.25fr 0.95fr" : "1fr" },
-              gap: isMobile ? 1.25 : 2.5,
-              alignItems: "center",
-            }}
-          >
-            <Stack spacing={isMobile ? 1 : 1.5}>
-              <Box
-                sx={{
-                  px: isMobile ? 1.1 : 1.5,
-                  py: isMobile ? 0.55 : 0.75,
-                  width: "fit-content",
-                  borderRadius: `${theme.pillRadius}px`,
-                  bgcolor: theme.accentSoft,
-                  color: theme.accent,
-                  fontWeight: 700,
-                  fontSize: 12,
-                }}
-              >
-                {brandName}
-              </Box>
-              <Typography
-                sx={{
-                  color: textColor,
-                  fontWeight: headingWeight,
-                  letterSpacing: headingLetterSpacing,
-                  lineHeight: 1.05,
-                  fontSize: isMobile
-                    ? theme.titleStyle === "display"
-                      ? "1.35rem"
-                      : theme.titleStyle === "editorial"
-                        ? "1.28rem"
-                        : "1.18rem"
-                    : headingFontSize,
-                  maxWidth: isMobile ? "100%" : "11ch",
-                }}
-              >
-                {theme.titleStyle === "display"
-                  ? `${brandName} convertit mieux avec un funnel visuel`
-                  : theme.titleStyle === "editorial"
-                    ? `${brandName} adopte une direction plus premium`
-                    : `${brandName} avec une page claire et orientee conversion`}
-              </Typography>
-              <Skeleton
-                variant="text"
-                width="100%"
-                height={isMobile ? 18 : 22}
-                sx={{ bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined }}
-              />
-              <Skeleton
-                variant="text"
-                width={isMobile ? "88%" : "75%"}
-                height={isMobile ? 18 : 22}
-                sx={{ bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined }}
-              />
-              <Stack direction={isMobile ? "column" : "row"} spacing={1} sx={{ pt: isMobile ? 0.5 : 1 }}>
-                <Box
-                  sx={{
-                    px: isMobile ? 1.8 : 2.5,
-                    py: isMobile ? 0.95 : 1.2,
-                    borderRadius: `${theme.pillRadius}px`,
-                    bgcolor: theme.accent,
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: isMobile ? 12 : 13,
-                    textAlign: "center",
-                  }}
-                >
-                  CTA principal
-                </Box>
-                <Box
-                  sx={{
-                    px: isMobile ? 1.8 : 2.5,
-                    py: isMobile ? 0.95 : 1.2,
-                    borderRadius: `${theme.pillRadius}px`,
-                    border: "1px solid",
-                    borderColor: theme.dark ? alpha("#fff", 0.14) : CAPTURIA_COLORS.border,
-                    color: textColor,
-                    fontWeight: 700,
-                    fontSize: isMobile ? 12 : 13,
-                    textAlign: "center",
-                  }}
-                >
-                  CTA secondaire
-                </Box>
-              </Stack>
-            </Stack>
-            {theme.showHeroMedia ? (
-              <Box
-                sx={{
-                  minHeight: isMobile ? 150 : 260,
-                  borderRadius: blockRadius,
-                  border: "1px solid",
-                  borderColor: theme.dark ? alpha("#fff", 0.10) : CAPTURIA_COLORS.border,
-                  background: heroGradient,
-                  display: "grid",
-                  placeItems: "center",
-                }}
-              >
-                <Skeleton
-                  variant="rounded"
-                  width={isMobile ? "84%" : "78%"}
-                  height={isMobile ? 110 : 180}
-                  sx={{ borderRadius: blockRadius, bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined }}
-                />
-              </Box>
-            ) : null}
-          </Box>
-        </PreviewBlock>
-      );
-    }
-
-    if (["benefits", "pricing", "comparison", "testimonials"].includes(section)) {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Stack spacing={isMobile ? 1.25 : 2}>
-            <Stack spacing={0.7}>
-              <Typography sx={{ color: textColor, fontWeight: 800 }} variant="h6">
-                {slugToLabel(section)}
-              </Typography>
-              <Typography sx={{ color: subColor }} variant="body2">
-                Section de contenu adaptee aux choix du brief.
-              </Typography>
-            </Stack>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: isMobile
-                  ? "1fr"
-                  : { xs: "1fr", md: section === "comparison" ? "1fr 1fr" : "repeat(3, 1fr)" },
-                gap: 1.5,
-              }}
-            >
-              {Array.from({ length: section === "comparison" ? 2 : 3 }).map((_, index) => (
-                <Paper
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    minHeight: isMobile ? 128 : "auto",
-                    borderRadius: `${blockRadius}px`,
-                    border: "1px solid",
-                    borderColor: theme.dark ? alpha("#fff", 0.08) : CAPTURIA_COLORS.border,
-                    bgcolor: cardBg,
-                  }}
-                >
-                  <Stack spacing={1.25}>
-                    <Box
-                      sx={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: `${theme.smallRadius}px`,
-                        bgcolor:
-                          index === 0
-                            ? theme.accentSoft
-                            : index === 1
-                              ? alpha(theme.secondaryAccent, 0.12)
-                              : alpha(theme.accent, 0.08),
-                      }}
-                    />
-                    <Skeleton variant="text" width="70%" height={28} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.12) : undefined }} />
-                    <Skeleton variant="text" width="95%" height={20} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.08) : undefined }} />
-                    <Skeleton variant="text" width="80%" height={20} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.08) : undefined }} />
-                  </Stack>
-                </Paper>
-              ))}
-            </Box>
-          </Stack>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "stats") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : { xs: "1fr", md: "repeat(3, 1fr)" },
-              gap: 1.5,
-            }}
-          >
-            {[1, 2, 3].map((item) => (
-              <Paper
-                key={item}
-                elevation={0}
-                sx={{
-                  p: 2,
-                    borderRadius: `${blockRadius}px`,
-                  bgcolor: cardBg,
-                  border: "1px solid",
-                  borderColor: theme.dark ? alpha("#fff", 0.08) : CAPTURIA_COLORS.border,
-                }}
-              >
-                <Stack spacing={1}>
-                  <Typography sx={{ color: theme.accent, fontWeight: 900 }} variant="h4">
-                    {item === 1 ? "95%" : item === 2 ? "10K+" : "50+"}
-                  </Typography>
-                  <Skeleton variant="text" width="82%" height={20} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.08) : undefined }} />
-                </Stack>
-              </Paper>
-            ))}
-          </Box>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "trust_bar" || section === "logo_cloud") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Stack spacing={1.1}>
-            <Typography sx={{ color: subColor, fontWeight: 700 }} variant="body2">
-              Logos / preuves de confiance
-            </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={1.5}>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton
-                  key={index}
-                  variant="rounded"
-                  width={92}
-                  height={36}
-                  sx={{
-                    borderRadius: `${theme.smallRadius}px`,
-                    bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined,
-                  }}
-                />
-              ))}
-            </Stack>
-          </Stack>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "gallery" || (theme.galleryCount > 0 && !sections.includes("gallery"))) {
-      const galleryItems = Math.max(3, Math.min(6, theme.galleryCount || 3));
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Stack spacing={1.25}>
-            <Typography sx={{ color: textColor, fontWeight: 800 }} variant="h6">
-              Galerie
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns:
-                  isMobile
-                    ? "1fr"
-                    :
-                  theme.galleryDisplay.toLowerCase().includes("split")
-                    ? { xs: "1fr", md: "1.5fr 1fr" }
-                    : { xs: "1fr 1fr", md: "repeat(3, 1fr)" },
-                gap: 1.5,
-              }}
-            >
-              {Array.from({ length: galleryItems }).map((_, index) => (
-                <Skeleton
-                  key={index}
-                  variant="rounded"
-                  height={
-                    isMobile
-                      ? 120
-                      : index === 0 && theme.galleryDisplay.toLowerCase().includes("split")
-                        ? 220
-                        : 140
-                  }
-                  sx={{
-                    borderRadius: `${blockRadius}px`,
-                    bgcolor:
-                      index % 2 === 0
-                        ? alpha(theme.accent, theme.dark ? 0.16 : 0.10)
-                        : alpha(theme.secondaryAccent, theme.dark ? 0.16 : 0.10),
-                  }}
-                />
-              ))}
-            </Box>
-          </Stack>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "faq") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Stack spacing={1}>
-            <Typography sx={{ color: textColor, fontWeight: 800 }} variant="h6">
-              FAQ
-            </Typography>
-            {[1, 2, 3].map((item) => (
-              <Paper
-                key={item}
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: `${blockRadius}px`,
-                  border: "1px solid",
-                  borderColor: theme.dark ? alpha("#fff", 0.08) : CAPTURIA_COLORS.border,
-                  bgcolor: cardBg,
-                }}
-              >
-                <Skeleton variant="text" width="88%" height={24} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined }} />
-              </Paper>
-            ))}
-          </Stack>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "form") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : { xs: "1fr", md: "1.1fr 0.9fr" },
-              gap: 2,
-              alignItems: "start",
-            }}
-          >
-            <Stack spacing={0.8}>
-              <Typography sx={{ color: textColor, fontWeight: 800 }} variant="h6">
-                Formulaire
-              </Typography>
-              <Typography sx={{ color: subColor }} variant="body2">
-                Capture de lead ou demande de contact.
-              </Typography>
-            </Stack>
-            <Paper
-              elevation={0}
-              sx={{
-                p: isMobile ? 1.25 : 2,
-                borderRadius: `${blockRadius}px`,
-                border: "1px solid",
-                borderColor: theme.dark ? alpha("#fff", 0.08) : CAPTURIA_COLORS.border,
-                bgcolor: cardBg,
-              }}
-            >
-              <Stack spacing={1.25}>
-                {[1, 2, 3].map((item) => (
-                  <Skeleton
-                    key={item}
-                    variant="rounded"
-                    height={isMobile ? 38 : 46}
-                    sx={{
-                      borderRadius: `${theme.smallRadius}px`,
-                      bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined,
-                    }}
-                  />
-                ))}
-                <Box
-                  sx={{
-                    mt: 1,
-                    py: isMobile ? 0.9 : 1.2,
-                    borderRadius: `${theme.pillRadius}px`,
-                    bgcolor: theme.accent,
-                    color: "#fff",
-                    textAlign: "center",
-                    fontWeight: 800,
-                    fontSize: isMobile ? 12 : 13,
-                  }}
-                >
-                  Envoyer
-                </Box>
-              </Stack>
-            </Paper>
-          </Box>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "cta_banner" || section === "countdown") {
-      return (
-        <PreviewBlock
-          dark={theme.dark}
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Box
-            sx={{
-              p: isMobile ? 1.5 : 2.5,
-              borderRadius: `${blockRadius}px`,
-              background: theme.useGradient
-                ? `linear-gradient(135deg, ${theme.accentSoft}, ${alpha(theme.secondaryAccent, 0.08)})`
-                : theme.accentSoft,
-              border: "1px solid",
-              borderColor: alpha(theme.accent, 0.18),
-            }}
-          >
-            <Stack spacing={1.25}>
-              <Skeleton variant="text" width="55%" height={34} />
-              <Skeleton variant="text" width="80%" height={20} />
-              <Box
-                sx={{
-                  mt: 1,
-                  width: "fit-content",
-                  px: isMobile ? 1.5 : 2.25,
-                  py: isMobile ? 0.8 : 1,
-                  borderRadius: `${theme.pillRadius}px`,
-                  bgcolor: theme.accent,
-                  color: "#fff",
-                  fontWeight: 800,
-                  fontSize: isMobile ? 12 : 13,
-                }}
-              >
-                CTA
-              </Box>
-            </Stack>
-          </Box>
-        </PreviewBlock>
-      );
-    }
-
-    if (section === "footer") {
-      return (
-        <PreviewBlock
-          dark
-          radius={isMobile ? mobileBlockRadius : blockRadius}
-          uiStyle={theme.uiStyle}
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : { xs: "1fr", md: "1.2fr 1fr 1fr" },
-              gap: 2,
-            }}
-          >
-            {[1, 2, 3].map((item) => (
-              <Stack key={item} spacing={1}>
-                {item === 1 ? (
-                  <Typography sx={{ color: "rgba(255,255,255,0.92)", fontWeight: 800 }} variant="body1">
-                    {brandName}
-                  </Typography>
-                ) : (
-                  <Skeleton variant="text" width="58%" height={24} sx={{ bgcolor: alpha("#fff", 0.12) }} />
-                )}
-                <Skeleton variant="text" width="75%" height={18} sx={{ bgcolor: alpha("#fff", 0.08) }} />
-                <Skeleton variant="text" width="68%" height={18} sx={{ bgcolor: alpha("#fff", 0.08) }} />
-              </Stack>
-            ))}
-          </Box>
-        </PreviewBlock>
-      );
-    }
-
-    return (
-      <PreviewBlock
-        dark={theme.dark}
-        radius={isMobile ? mobileBlockRadius : blockRadius}
-        uiStyle={theme.uiStyle}
-      >
-        <Stack spacing={1.25}>
-          <Typography sx={{ color: textColor, fontWeight: 800 }} variant="h6">
-            {slugToLabel(section)}
-          </Typography>
-          <Skeleton variant="text" width="90%" height={22} sx={{ bgcolor: theme.dark ? alpha("#fff", 0.08) : undefined }} />
-          <Skeleton
-            variant="rounded"
-            height={120}
-            sx={{
-              borderRadius: `${blockRadius}px`,
-              bgcolor: theme.dark ? alpha("#fff", 0.10) : undefined,
-            }}
-          />
-        </Stack>
-      </PreviewBlock>
-    );
-  }
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: isMobile ? 1 : { xs: 2.5, md: 3 },
-        borderRadius: isMobile ? mobileBlockRadius + 8 : blockRadius + 4,
-        border: "1px solid",
-        borderColor: CAPTURIA_COLORS.border,
-        bgcolor: pageSurface,
-        background: theme.useGradient
-          ? `linear-gradient(180deg, ${bg} 0%, ${theme.surface} 100%)`
-          : bg,
-        boxShadow: "0 24px 60px rgba(15,23,42,0.08)",
-      }}
-    >
-      <Stack spacing={isMobile ? mobileSectionGap : sectionGap}>
-        {sections.map((section) => (
-          <Box key={section}>{renderSection(section)}</Box>
-        ))}
-      </Stack>
-    </Paper>
-  );
-}
-
-function resolveChoice(value: string, other: string) {
-  if (value === OTHER_VALUE) {
-    return other.trim();
-  }
-
-  return value;
-}
-
-function resolveList(values: string[], other: string) {
-  return [...values, ...other.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean)];
-}
-
-function toggleInList(list: string[], value: string) {
-  return list.includes(value)
-    ? list.filter((item) => item !== value)
-    : [...list, value];
-}
-
-function FieldPanel({ title, description, children }: FieldPanelProps) {
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        p: 2.5,
-        borderRadius: 4,
-        border: "1px solid",
-        borderColor: CAPTURIA_COLORS.border,
-        bgcolor: CAPTURIA_COLORS.white,
-        boxShadow: "0 10px 30px rgba(15,23,42,0.04)",
-      }}
-    >
-      <Stack spacing={2} sx={{ width: "100%", minWidth: 0 }}>
-        <Box>
-          <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 700 }} variant="subtitle1">
-            {title}
-          </Typography>
-          {description ? (
-            <Typography sx={{ color: CAPTURIA_COLORS.textMuted, mt: 0.5 }} variant="body2">
-              {description}
-            </Typography>
-          ) : null}
-        </Box>
-        {children}
-      </Stack>
-    </Paper>
-  );
-}
-
-function PaletteSelector({
-  value,
-  otherValue,
-  gradientMode,
-  onValueChange,
-  onOtherChange,
-}: {
-  value: string;
-  otherValue: string;
-  gradientMode: GradientMode;
-  onValueChange: (value: string) => void;
-  onOtherChange: (value: string) => void;
-}) {
-  return (
-    <FieldPanel
-      title="Palette suggeree"
-      description="Choisis une palette visuellement. L'aperçu ci-dessous montre immédiatement l'intention colorielle."
-    >
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, minmax(0, 1fr))",
-            xl: "repeat(3, minmax(0, 1fr))",
-          },
-          gap: 1.5,
-        }}
-      >
-        {PALETTE_LIBRARY.map((palette) => {
-          const internalValue = palette.value === "Other" ? OTHER_VALUE : palette.value;
-          const selected = value === internalValue;
-
-          return (
-            <ButtonBase
-              key={palette.value}
-              focusRipple
-              onClick={() => onValueChange(internalValue)}
-              sx={{
-                width: "100%",
-                textAlign: "left",
-                borderRadius: 4,
-                alignItems: "stretch",
-                justifyContent: "stretch",
-              }}
-            >
-              <Paper
-                elevation={0}
-                sx={{
-                  width: "100%",
-                  p: 1.5,
-                  borderRadius: 4,
-                  border: "1px solid",
-                  borderColor: selected ? alpha(palette.colors[1], 0.38) : CAPTURIA_COLORS.border,
-                  bgcolor: selected ? alpha(palette.colors[3], 0.75) : CAPTURIA_COLORS.white,
-                  boxShadow: selected
-                    ? "0 18px 36px rgba(15,23,42,0.10)"
-                    : "0 10px 24px rgba(15,23,42,0.04)",
-                  transition: "all 180ms ease",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 18px 34px rgba(15,23,42,0.08)",
-                  },
-                }}
-              >
-                <Stack spacing={1.25}>
-                  <Box
-                    sx={{
-                      p: 1.1,
-                      borderRadius: 3,
-                      background:
-                        gradientMode === "without"
-                          ? palette.colors[0]
-                          : `linear-gradient(135deg, ${palette.colors[0]} 0%, ${palette.colors[1]} 45%, ${palette.colors[2]} 100%)`,
-                      minHeight: 96,
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Stack alignItems="center" direction="row" justifyContent="space-between">
-                      <Box
-                        sx={{
-                          width: 52,
-                          height: 10,
-                          borderRadius: 999,
-                          bgcolor: alpha("#ffffff", 0.7),
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 999,
-                          bgcolor: alpha("#ffffff", 0.18),
-                          border: "1px solid rgba(255,255,255,0.18)",
-                        }}
-                      />
-                    </Stack>
-                    <Stack spacing={0.8}>
-                      <Box sx={{ width: "72%", height: 9, borderRadius: 999, bgcolor: alpha("#ffffff", 0.78) }} />
-                      <Box sx={{ width: "54%", height: 9, borderRadius: 999, bgcolor: alpha("#ffffff", 0.52) }} />
-                      <Stack direction="row" spacing={0.7}>
-                        {palette.colors.map((color) => (
-                          <Box
-                            key={color}
-                            sx={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: 999,
-                              bgcolor: color,
-                              border: "1px solid rgba(255,255,255,0.35)",
-                            }}
-                          />
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </Box>
-
-                  <Stack spacing={0.5}>
-                    <Stack alignItems="center" direction="row" justifyContent="space-between" spacing={1}>
-                      <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="body1">
-                        {palette.label}
-                      </Typography>
-                      <Stack direction="row" spacing={0.75}>
-                        <Chip
-                          label={palette.isDark ? "Fond sombre" : "Fond clair"}
-                          size="small"
-                          sx={{
-                            bgcolor: palette.isDark ? alpha(CAPTURIA_COLORS.navy, 0.08) : alpha("#ffffff", 0.88),
-                            color: palette.isDark ? CAPTURIA_COLORS.navy : CAPTURIA_COLORS.textMuted,
-                            fontWeight: 700,
-                            border: "1px solid",
-                            borderColor: palette.isDark ? alpha(CAPTURIA_COLORS.navy, 0.12) : CAPTURIA_COLORS.border,
-                          }}
-                        />
-                        {selected ? (
-                          <Chip
-                            label="Selectionne"
-                            size="small"
-                            sx={{
-                              bgcolor: alpha(palette.colors[1], 0.12),
-                              color: palette.colors[1],
-                              fontWeight: 700,
-                            }}
-                          />
-                        ) : null}
-                      </Stack>
-                    </Stack>
-                    <Typography sx={{ color: CAPTURIA_COLORS.textMuted }} variant="body2">
-                      {palette.description}
-                    </Typography>
-                  </Stack>
-                </Stack>
-              </Paper>
-            </ButtonBase>
-          );
-        })}
-      </Box>
-
-      {value === OTHER_VALUE ? (
-        <TextField
-          fullWidth
-          label="Autre palette"
-          placeholder="Ex: bleu profond + or doux, sunset tropical, noir graphite + lime..."
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              borderRadius: 3,
-              bgcolor: CAPTURIA_COLORS.white,
-            },
-          }}
-          value={otherValue}
-          onChange={(event) => onOtherChange(event.target.value)}
-        />
-      ) : null}
-    </FieldPanel>
-  );
-}
-
-function SelectWithOtherField({
-  label,
-  value,
-  otherValue,
-  options,
-  onValueChange,
-  onOtherChange,
-  helperText,
-  otherLabel,
-  placeholder,
-}: SelectWithOtherFieldProps) {
-  return (
-    <Box sx={{ flex: "1 1 0", minWidth: 0, width: "100%", display: "flex" }}>
-      <FieldPanel title={label} description={helperText}>
-        <TextField
-          fullWidth
-          label={`Choisir ${label.toLowerCase()}`}
-          select
-          SelectProps={{
-            MenuProps: {
-              PaperProps: {
-                sx: {
-                  mt: 1,
-                  borderRadius: 3,
-                  border: `1px solid ${CAPTURIA_COLORS.border}`,
-                  boxShadow: "0 18px 40px rgba(15,23,42,0.10)",
-                },
-              },
-            },
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              minHeight: 58,
-              borderRadius: 3,
-              bgcolor: CAPTURIA_COLORS.surface,
-              transition: "all 180ms ease",
-              "&:hover": {
-                boxShadow: `0 0 0 4px ${alpha(CAPTURIA_COLORS.teal, 0.08)}`,
-              },
-            },
-          }}
-          value={value}
-          onChange={(event) => onValueChange(event.target.value)}
-        >
-          {options.map((option) => (
-            <MenuItem
-              key={option}
-              sx={{ borderRadius: 2, my: 0.5, mx: 0.75 }}
-              value={option}
-            >
-              {option === OTHER_VALUE ? "Autre" : option}
-            </MenuItem>
-          ))}
-        </TextField>
-        {value === OTHER_VALUE ? (
-          <TextField
-            fullWidth
-            label={otherLabel ?? `Autre ${label.toLowerCase()}`}
-            placeholder={placeholder}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 3,
-                bgcolor: CAPTURIA_COLORS.white,
-              },
-            }}
-            value={otherValue}
-            onChange={(event) => onOtherChange(event.target.value)}
-          />
-        ) : null}
-      </FieldPanel>
-    </Box>
-  );
-}
-
-function CheckboxSuggestionGroup({
-  label,
-  options,
-  values,
-  onToggle,
-  helperText,
-  otherValue,
-  onOtherChange,
-  otherLabel,
-}: CheckboxSuggestionGroupProps) {
-  return (
-    <Box sx={{ flex: "1 1 0", minWidth: 0, width: "100%", display: "flex" }}>
-      <FieldPanel title={label} description={helperText}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              lg: "repeat(3, minmax(0, 1fr))",
-            },
-            gap: 1.5,
-          }}
-        >
-          {options.map((option) => {
-            const checked = values.includes(option);
-
-            return (
-              <ButtonBase
-                key={option}
-                focusRipple
-                onClick={() => onToggle(option)}
-                sx={{
-                  width: "100%",
-                  borderRadius: 3,
-                  textAlign: "left",
-                  justifyContent: "flex-start",
-                  alignItems: "stretch",
-                }}
-              >
-                <Paper
-                  elevation={0}
-                  sx={{
-                    width: "100%",
-                    p: 1.5,
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: checked ? alpha(CAPTURIA_COLORS.teal, 0.42) : CAPTURIA_COLORS.border,
-                    bgcolor: checked ? alpha(CAPTURIA_COLORS.teal, 0.09) : CAPTURIA_COLORS.surface,
-                    boxShadow: checked
-                      ? "0 16px 30px rgba(20,184,166,0.14)"
-                      : "0 6px 18px rgba(15,23,42,0.03)",
-                    transform: checked ? "translateY(-1px)" : "translateY(0)",
-                    transition: "all 180ms ease",
-                    "&:hover": {
-                      borderColor: alpha(CAPTURIA_COLORS.teal, 0.36),
-                      boxShadow: "0 14px 28px rgba(15,23,42,0.08)",
-                    },
-                  }}
-                >
-                  <Stack alignItems="center" direction="row" spacing={1.25}>
-                    <Checkbox
-                      checked={checked}
-                      tabIndex={-1}
-                      disableRipple
-                      sx={{
-                        p: 0,
-                        color: CAPTURIA_COLORS.textMuted,
-                        "&.Mui-checked": {
-                          color: CAPTURIA_COLORS.teal,
-                        },
-                      }}
-                    />
-                    <Typography
-                      sx={{
-                        color: checked ? CAPTURIA_COLORS.navy : CAPTURIA_COLORS.navySoft,
-                        fontWeight: checked ? 700 : 600,
-                      }}
-                      variant="body2"
-                    >
-                      {option}
-                    </Typography>
-                  </Stack>
-                </Paper>
-              </ButtonBase>
-            );
-          })}
-        </Box>
-        <TextField
-          fullWidth
-          helperText="Ajoute des elements supplementaires separes par des virgules ou des retours a la ligne."
-          label={otherLabel ?? `Autres ${label.toLowerCase()}`}
-          minRows={2}
-          multiline
-          InputProps={{
-            sx: {
-              borderRadius: 3,
-              bgcolor: CAPTURIA_COLORS.surface,
-            },
-          }}
-          value={otherValue}
-          onChange={(event) => onOtherChange(event.target.value)}
-        />
-      </FieldPanel>
-    </Box>
-  );
-}
-
 function buildGuidedPrompt(form: GuidedPromptState) {
-  const pageType = resolveChoice(form.pageType, form.pageTypeOther);
-  const goal = resolveChoice(form.goal, form.goalOther);
-  const complexity = resolveChoice(form.complexity, form.complexityOther);
-  const pageLength = resolveChoice(form.pageLength, form.pageLengthOther);
-  const audience = resolveChoice(form.audience, form.audienceOther);
-  const awarenessLevel = resolveChoice(form.awarenessLevel, form.awarenessLevelOther);
-  const geography = resolveChoice(form.geography, form.geographyOther);
-  const promise = resolveChoice(form.promise, form.promiseOther);
-  const marketingAngle = resolveChoice(form.marketingAngle, form.marketingAngleOther);
-  const proofLevel = resolveChoice(form.proofLevel, form.proofLevelOther);
-  const style = resolveChoice(form.style, form.styleOther);
-  const ambiance = resolveChoice(form.ambiance, form.ambianceOther);
-  const uiStyle = resolveChoice(form.uiStyle, form.uiStyleOther);
-  const cornerStyle = resolveChoice(form.cornerStyle, form.cornerStyleOther);
-  const tone = resolveChoice(form.tone, form.toneOther);
-  const copyStyle = resolveChoice(form.copyStyle, form.copyStyleOther);
-  const palette = resolveChoice(form.palette, form.paletteOther);
-  const gradientTreatment =
-    form.gradientMode === "with"
-      ? "Avec gradients"
-      : form.gradientMode === "without"
-        ? "Sans gradient"
-        : "Laisser le modele choisir";
-  const heroLayout = resolveChoice(form.heroLayout, form.heroLayoutOther);
-  const heroContent = resolveChoice(form.heroContent, form.heroContentOther);
-  const heroMedia = resolveChoice(form.heroMedia, form.heroMediaOther);
-  const imageDisplay = resolveChoice(form.imageDisplay, form.imageDisplayOther);
-  const cta = resolveChoice(form.cta, form.ctaOther);
-  const secondaryCta = resolveChoice(form.secondaryCta, form.secondaryCtaOther);
-  const formGoal = resolveChoice(form.formGoal, form.formGoalOther);
-  const formFriction = resolveChoice(form.formFriction, form.formFrictionOther);
-  const funnelStage = resolveChoice(form.funnelStage, form.funnelStageOther);
-  const offerType = resolveChoice(form.offerType, form.offerTypeOther);
-  const urgency = resolveChoice(form.urgency, form.urgencyOther);
-  const language = resolveChoice(form.language, form.languageOther);
-  const targetDevice = resolveChoice(form.targetDevice, form.targetDeviceOther);
-  const density = resolveChoice(form.density, form.densityOther);
-  const accessibility = resolveChoice(form.accessibility, form.accessibilityOther);
-  const headerStyle = resolveChoice(form.headerStyle, form.headerStyleOther);
-  const footerStyle = resolveChoice(form.footerStyle, form.footerStyleOther);
-  const sections = resolveList(form.sections, form.sectionsOther);
-  const advancedSections = resolveList(form.advancedSections, form.advancedSectionsOther);
-  const requiredSections = resolveList(form.requiredSections, form.requiredSectionsOther);
-  const forbiddenSections = resolveList(form.forbiddenSections, form.forbiddenSectionsOther);
-  const proofElements = resolveList(form.proofElements, form.proofElementsOther);
-  const formFields = resolveList(form.formFields, form.formFieldsOther);
-  const animationTypes = resolveList(form.animationTypes, form.animationTypesOther);
-  const specializedFocus = resolveList(form.specializedFocus, form.specializedFocusOther);
-  const product = resolveChoice(form.product, form.productOther);
+  const localization = buildLocalizationConstraint(form);
 
   return [
-    `Genere une page pour ${product || "un produit digital"}.`,
-    form.websiteName.trim() ? `Nom du site web / de la marque: ${form.websiteName.trim()}.` : "",
-    form.businessDescription.trim()
-      ? `Descriptif de l'activite: ${form.businessDescription.trim()}.`
+    `Genere une page pour ${form.product}.`,
+    form.websiteName.trim() ? `Nom du site: ${form.websiteName.trim()}.` : "",
+    form.businessDescription.trim() ? `Activite: ${form.businessDescription.trim()}.` : "",
+    `Type de page: ${form.pageType}.`,
+    `Objectif principal: ${form.goal}.`,
+    `Audience: ${form.audience}.`,
+    `Langue principale d'affichage: ${localization.locale}.`,
+    `Sens d'affichage impose: ${localization.direction === "rtl" ? "droite vers gauche (RTL)" : "gauche vers droite (LTR)"}.`,
+    localization.supportedLocales?.length > 1
+      ? `Langues supportees: ${localization.supportedLocales.join(", ")}.`
+      : `Une seule langue a afficher: ${localization.locale}.`,
+    localization.translationsEnabled
+      ? "Le JSON doit inclure un contexte multilingue avec translationsEnabled true."
+      : "Le JSON peut rester en mono-langue avec translationsEnabled false.",
+    "Si une langue principale est definie, tous les textes visibles de la page doivent etre rediges dans cette langue.",
+    localization.supportedLocales?.length > 1
+      ? "Si plusieurs langues sont demandees, ne te contente pas de localization: pense aussi la page comme une experience multilingue coherente."
       : "",
-    pageType ? `Type de page: ${pageType}.` : "",
-    goal ? `Objectif principal: ${goal}.` : "",
-    complexity ? `Niveau de complexite souhaite: ${complexity}.` : "",
-    pageLength ? `Longueur de page souhaitee: ${pageLength}.` : "",
-    audience ? `Audience cible: ${audience}.` : "",
-    awarenessLevel ? `Niveau de conscience de l'audience: ${awarenessLevel}.` : "",
-    geography ? `Cible geographique / linguistique: ${geography}.` : "",
-    promise ? `Promesse principale: ${promise}.` : "",
-    marketingAngle ? `Angle marketing: ${marketingAngle}.` : "",
-    proofLevel ? `Niveau de preuve attendu: ${proofLevel}.` : "",
-    tone ? `Ton souhaite: ${tone}.` : "",
-    copyStyle ? `Style de copywriting: ${copyStyle}.` : "",
-    style ? `Direction visuelle: ${style}.` : "",
-    ambiance ? `Ambiance visuelle: ${ambiance}.` : "",
-    uiStyle ? `Style d'interface: ${uiStyle}.` : "",
-    cornerStyle ? `Style des coins / forme: ${cornerStyle}.` : "",
-    form.colorMode === "model"
-      ? "Palette couleur: laisse le modele choisir librement."
+    localization.supportedLocales?.length > 1
+      ? `Utilise de preference des objets localises pour les textes visibles majeurs, par exemple: { ${localization.supportedLocales.map((item) => `${item}: "..."`).join(", ")} }.`
       : "",
-    form.colorMode === "palette" && palette
-      ? `Palette couleur souhaitee: ${palette}.`
+    localization.supportedLocales?.length > 1
+      ? "Applique ce format localise au minimum sur headline, subheadline, title, CTA, labels de formulaire, questions/reponses FAQ et textes visibles principaux."
       : "",
+    "Avant de finaliser, verifie que tu n'as pas oublie les langues demandees dans le contenu visible.",
+    localization.supportedLocales?.length > 1
+      ? "Verification finale: si supportedLocales contient plusieurs langues, le JSON ne doit pas etre un faux multilingue avec uniquement du francais."
+      : "",
+    localization.direction === "rtl"
+      ? "Verification finale: comme la page est en RTL, controle que les textes visibles sont bien dans une langue RTL et pas restes en francais par oubli."
+      : "",
+    form.translationContext.trim()
+      ? `Contexte de traduction: ${form.translationContext.trim()}.`
+      : "",
+    localization.direction === "rtl"
+      ? "La mise en page doit etre pensee pour une lecture RTL complete, comme pour l'arabe."
+      : "La mise en page doit etre pensee pour une lecture LTR complete.",
+    `Direction visuelle: ${form.style}.`,
+    `Ton: ${form.tone}.`,
+    `Style d'interface: ${form.uiStyle}.`,
+    `Niveau d'optimisation UX: ${form.uxLevel}.`,
+    form.uxOptions.length > 0
+      ? `Optimisations UX a privilegier: ${form.uxOptions.map(describeUxOption).join(", ")}.`
+      : "",
+    form.uxOptions.includes("progressive_disclosure")
+      ? "Utilise une revelation progressive des informations pour alleger l'experience."
+      : "",
+    form.uxOptions.includes("checklist_progression")
+      ? "Ajoute si pertinent une logique de checklist ou de progression visible."
+      : "",
+    form.uxOptions.includes("feedback_instantane")
+      ? "Prevois un feedback instantane et rassurant sur les actions importantes."
+      : "",
+    form.uxOptions.includes("microcopy_humain")
+      ? "Utilise une micro-copy plus humaine, rassurante et engageante."
+      : "",
+    form.uxOptions.includes("empty_states_intelligents")
+      ? "Si la page comporte des etats vides ou blocs sans contenu initial, rends-les utiles et orientés action."
+      : "",
+    form.uxOptions.includes("personalisation_dynamique")
+      ? "Si pertinent, integre des touches de personnalisation dynamique dans les messages ou sections."
+      : "",
+    form.uxOptions.includes("onboarding_interactif")
+      ? "Si le contexte s'y prete, pense l'experience comme un onboarding interactif et progressif."
+      : "",
+    form.uxOptions.includes("social_proof_dynamique")
+      ? "Renforce la confiance avec des preuves sociales modernes et bien visibles."
+      : "",
+    form.uxOptions.includes("sticky_cta")
+      ? "Fais en sorte qu'une action principale reste facilement accessible pendant la navigation."
+      : "",
+    form.uxOptions.includes("inline_validation")
+      ? "Si un formulaire est present, privilegie une validation inline claire et immediate."
+      : "",
+    form.uxOptions.includes("skeleton_loading")
+      ? "Prevois une experience de chargement percue comme rapide avec skeletons ou placeholders si pertinent."
+      : "",
+    form.uxOptions.includes("autosave_autoprogress")
+      ? "Si la page a des etapes ou saisies, pense auto-save ou auto-progress pour reduire le stress utilisateur."
+      : "",
+    form.uxOptions.includes("optimistic_ui")
+      ? "Donne une sensation de reactivite immediate sur les interactions importantes."
+      : "",
+    form.uxOptions.includes("smart_defaults")
+      ? "Utilise des valeurs par defaut intelligentes pour reduire l'effort utilisateur."
+      : "",
+    `Style de header: ${form.headerVariant}.`,
+    `Header sticky: ${form.headerSticky}.`,
+    `Transparence du header: ${form.headerTransparency}.`,
+    `Comportement du header au scroll: ${form.headerScrollBehavior}.`,
+    `Si une navbar est presente, utilise de preference variant "${resolveHeaderVariantToken(form.headerVariant)}", sticky ${resolveHeaderSticky(form.headerSticky)}, transparent ${resolveHeaderTransparency(form.headerTransparency)} et showOnScroll ${resolveHeaderScrollBehavior(form.headerScrollBehavior)}.`,
+    `Style des coins: ${form.cornerStyle}.`,
+    form.colorMode === "model" ? "Le modele choisit librement les couleurs." : "",
+    form.colorMode === "palette" ? `Palette imposee: ${form.palette}.` : "",
     form.colorMode === "custom"
       ? `Couleurs imposees: primary ${form.customPrimary}, secondary ${form.customSecondary}, accent ${form.customAccent}, background ${form.customBackground}, text ${form.customText}.`
       : "",
-    `Traitement des fonds et accents: ${gradientTreatment}.`,
-    heroLayout ? `Disposition hero: ${heroLayout}.` : "",
-    heroContent ? `Contenu hero prefere: ${heroContent}.` : "",
-    heroMedia ? `Media hero prefere: ${heroMedia}.` : "",
-    form.heroImageMode === "none"
-      ? "La section hero ne doit pas contenir d'image."
-      : "",
-    form.heroImageMode === "context"
-      ? "La section hero doit contenir une image choisie selon le contexte."
-      : "",
+    `Gradients: ${form.gradientMode}.`,
+    `Sections obligatoires: ${form.sections.join(", ")}.`,
+    `CTA principal: ${form.cta}.`,
+    `Nombre de visuels galerie: ${form.galleryImageCount}.`,
+    `Affichage de galerie: ${form.imageDisplay}.`,
+    form.heroImageMode === "none" ? "Hero sans image." : "",
+    form.heroImageMode === "context" ? "Image hero selon le contexte." : "",
     form.heroImageMode === "custom" && form.heroImageCustomDescription.trim()
-      ? `Descriptif de l'image hero: ${form.heroImageCustomDescription.trim()}.`
+      ? `Descriptif image hero: ${form.heroImageCustomDescription.trim()}.`
       : "",
-    `Nombre de visuels de galerie a generer: ${form.galleryImageCount}.`,
-    imageDisplay ? `Type d'affichage de la galerie: ${imageDisplay}.` : "",
-    form.galleryImageCount !== "0" && form.galleryDescriptionMode === "context"
-      ? "Les visuels de galerie doivent etre decrits selon le contexte."
+    form.galleryImageCount !== "0" && form.galleryDescriptionMode === "custom" && form.galleryCustomDescription.trim()
+      ? `Descriptif galerie: ${form.galleryCustomDescription.trim()}.`
       : "",
-    form.galleryImageCount !== "0" &&
-    form.galleryDescriptionMode === "custom" &&
-    form.galleryCustomDescription.trim()
-      ? `Descriptif personnalise des visuels de galerie: ${form.galleryCustomDescription.trim()}.`
-      : "",
-    cta ? `CTA principal souhaite: ${cta}.` : "",
-    secondaryCta ? `CTA secondaire souhaite: ${secondaryCta}.` : "",
-    formGoal ? `Objectif du formulaire: ${formGoal}.` : "",
-    formFriction ? `Niveau de friction du formulaire: ${formFriction}.` : "",
-    formFields.length > 0 ? `Champs de formulaire souhaites: ${formFields.join(", ")}.` : "",
-    proofElements.length > 0 ? `Elements de preuve sociale / confiance: ${proofElements.join(", ")}.` : "",
-    sections.length > 0 ? `Sections souhaitees: ${sections.join(", ")}.` : "",
-    advancedSections.length > 0 ? `Sections avancees a considerer: ${advancedSections.join(", ")}.` : "",
-    requiredSections.length > 0 ? `Sections obligatoires: ${requiredSections.join(", ")}.` : "",
-    forbiddenSections.length > 0 ? `Sections a eviter absolument: ${forbiddenSections.join(", ")}.` : "",
-    funnelStage ? `Etape du funnel ciblee: ${funnelStage}.` : "",
-    offerType ? `Type d'offre: ${offerType}.` : "",
-    urgency ? `Niveau d'urgence / rarete: ${urgency}.` : "",
-    animationTypes.length > 0 ? `Animations souhaitees: ${animationTypes.join(", ")}.` : "",
-    specializedFocus.length > 0 ? `Focus metier / contenu specialise: ${specializedFocus.join(", ")}.` : "",
-    language ? `Langue de la page: ${language}.` : "",
-    targetDevice ? `Cible device: ${targetDevice}.` : "",
-    density ? `Densite du contenu: ${density}.` : "",
-    accessibility ? `Preference d'accessibilite: ${accessibility}.` : "",
-    headerStyle ? `Style du header: ${headerStyle}.` : "",
-    footerStyle ? `Style du footer: ${footerStyle}.` : "",
-    form.referenceVisual.trim() ? `Reference visuelle: ${form.referenceVisual.trim()}.` : "",
-    form.promiseSentence.trim() ? `Promesse en une phrase: ${form.promiseSentence.trim()}.` : "",
-    form.mainObjection.trim() ? `Objection principale a traiter: ${form.mainObjection.trim()}.` : "",
-    form.differentiator.trim() ? `Element differentiant principal: ${form.differentiator.trim()}.` : "",
-    form.emotion.trim() ? `Emotion a provoquer: ${form.emotion.trim()}.` : "",
-    form.quickAction.trim() ? `Action que le visiteur doit faire en moins de 10 secondes: ${form.quickAction.trim()}.` : "",
-    form.avoidThings.trim() ? `A eviter absolument: ${form.avoidThings.trim()}.` : "",
     form.notes.trim() ? `Notes supplementaires: ${form.notes.trim()}.` : "",
   ]
     .filter(Boolean)
     .join("\n");
 }
 
+function inferPreviewTheme(form: GuidedPromptState) {
+  if (form.colorMode === "custom") {
+    return {
+      primary: form.customPrimary,
+      secondary: form.customSecondary || form.customAccent || form.customPrimary,
+      accent: form.customAccent || form.customPrimary,
+      background: form.customBackground,
+      text: form.customText,
+      dark: form.customBackground.toLowerCase() !== "#ffffff" && form.customBackground.toLowerCase() !== "#f8fafc",
+    };
+  }
+
+  if (form.colorMode === "palette") {
+    const palette = findPaletteDefinition(form.palette);
+    if (palette) {
+      return {
+        primary: palette.colors[1],
+        secondary: palette.colors[2],
+        accent: palette.colors[1],
+        background: palette.isDark ? palette.colors[0] : palette.colors[3],
+        text: palette.isDark ? "#ffffff" : palette.colors[0],
+        dark: Boolean(palette.isDark),
+      };
+    }
+  }
+
+  return {
+    primary: "#14b8a6",
+    secondary: "#0f172a",
+    accent: "#14b8a6",
+    background: "#f8fafc",
+    text: "#0f172a",
+    dark: false,
+  };
+}
+
+function StepBadge({ active, done, label }: { active: boolean; done: boolean; label: string }) {
+  return (
+    <div
+      className={cx(
+        "rounded-2xl border px-4 py-3 text-sm font-semibold transition",
+        active && "border-teal-500 bg-teal-500 text-white",
+        done && !active && "border-slate-300 bg-white text-slate-900",
+        !active && !done && "border-slate-200 bg-slate-50 text-slate-500",
+      )}
+    >
+      {label}
+    </div>
+  );
+}
+
+function PaletteCard({
+  palette,
+  selected,
+  onClick,
+}: {
+  palette: PalettePreviewDefinition;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={cx(
+        "flex h-full w-full flex-col rounded-3xl border p-4 text-left transition hover:-translate-y-0.5",
+        selected ? "border-teal-500 bg-teal-50 shadow-sm" : "border-slate-200 bg-white",
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <div
+        className="mb-3 h-20 rounded-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${palette.colors[0]} 0%, ${palette.colors[1]} 50%, ${palette.colors[2]} 100%)`,
+        }}
+      />
+      <div className="flex min-h-[92px] flex-1 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <p
+            className="font-semibold leading-5 text-slate-900"
+            style={{
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {palette.label}
+          </p>
+          <span className="shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+            {palette.isDark ? "Sombre" : "Clair"}
+          </span>
+        </div>
+        <p
+          className="mt-2 text-sm leading-5 text-slate-500"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {palette.description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function PreviewFrame({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="mb-3 text-sm font-semibold text-slate-500">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function getSectionDisplayLabel(section: string) {
+  switch (section) {
+    case "navbar":
+      return "Menu du haut";
+    case "hero":
+      return "Bloc d'ouverture";
+    case "benefits":
+      return "Avantages";
+    case "stats":
+      return "Chiffres clefs";
+    case "testimonials":
+      return "Avis clients";
+    case "faq":
+      return "Questions frequentes";
+    case "gallery":
+      return "Galerie";
+    case "form":
+      return "Formulaire";
+    case "pricing":
+      return "Tarifs";
+    case "footer":
+      return "Bas de page";
+    default:
+      return section;
+  }
+}
+
+function getPaletteCategoryLabel(category: PaletteCategory) {
+  switch (category) {
+    case "Dark":
+      return "Sombre";
+    case "Neutre":
+      return "Neutre";
+    case "Flashy":
+      return "Vif";
+    case "Premium":
+      return "Haut de gamme";
+    case "Nature":
+      return "Nature";
+    case "Tech":
+      return "Moderne";
+    default:
+      return category;
+  }
+}
+
+function getImageDisplayLabel(value: string) {
+  switch (value) {
+    case "auto":
+      return "Choix automatique";
+    case "carousel":
+      return "Defilement horizontal";
+    case "grid":
+      return "Grille";
+    case "masonry":
+      return "Mise en page libre";
+    case "stacked":
+      return "Empile";
+    case "split":
+      return "Grand visuel + petits visuels";
+    default:
+      return value;
+  }
+}
+
+function LoadingPreviewSkeleton({ form }: { form: GuidedPromptState }) {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="h-2.5 w-24 rounded-full bg-slate-200 animate-pulse" />
+        <div className="flex gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-teal-400 animate-pulse" />
+          <div className="h-2.5 w-2.5 rounded-full bg-slate-300 animate-pulse" />
+          <div className="h-2.5 w-2.5 rounded-full bg-slate-300 animate-pulse" />
+        </div>
+      </div>
+      <div className="scale-[0.94] origin-top">
+        <SkeletonPreview form={form} />
+      </div>
+    </div>
+  );
+}
+
+function LoadingRobotScene() {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)] p-5">
+      <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-slate-950 p-4">
+        <div className="absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,rgba(45,212,191,0.25),transparent_60%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,rgba(148,163,184,0.18))]" />
+        <div className="relative flex min-h-[260px] items-center justify-center rounded-[18px] border border-slate-800 bg-slate-900/90 p-4">
+          <img
+            alt="Robot bricoleur"
+            className="h-[220px] w-auto rounded-2xl object-contain"
+            onError={(event) => {
+              event.currentTarget.src = "/robot-builder-fallback.svg";
+            }}
+            src={ROBOT_GIF_URL}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingProgressTrack({ progress }: { progress: number }) {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Progression</p>
+          <p className="mt-1 text-sm text-slate-600">La progression visuelle va jusqu&apos;a 100% avant la fin.</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm">{progress}%</span>
+      </div>
+      <div className="mt-4 grid grid-cols-10 gap-2">
+        {Array.from({ length: 10 }).map((_, index) => {
+          const active = progress >= (index + 1) * 10;
+          return (
+            <div
+              className={cx(
+                "h-3 rounded-full transition-all duration-700",
+                active ? "bg-gradient-to-r from-teal-500 to-cyan-400 shadow-[0_0_18px_rgba(20,184,166,0.28)]" : "bg-slate-200",
+              )}
+              key={index}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonPreview({
+  form,
+}: {
+  form: GuidedPromptState;
+}) {
+  const theme = inferPreviewTheme(form);
+  const sections = form.sections.includes("footer") ? form.sections : [...form.sections, "footer"];
+  const direction = resolveDirection(form);
+
+  return (
+    <div
+      className={cx("overflow-hidden rounded-[28px] border p-4", direction === "rtl" && "text-right")}
+      dir={direction}
+      style={{
+        background: form.gradientMode === "without"
+          ? theme.background
+          : `linear-gradient(180deg, ${theme.background} 0%, ${theme.dark ? "#111827" : "#ffffff"} 100%)`,
+        color: theme.text,
+        borderColor: theme.dark ? "rgba(255,255,255,0.1)" : "#e2e8f0",
+      }}
+    >
+      <div className={cx("mb-4 flex items-center justify-between", direction === "rtl" && "flex-row-reverse")}>
+        <div className="h-3 w-24 rounded-full" style={{ backgroundColor: theme.primary }} />
+        <div className="h-3 w-8 rounded-full" style={{ backgroundColor: theme.text, opacity: 0.65 }} />
+      </div>
+      <div className={cx("mb-4 grid gap-3", direction === "rtl" ? "md:grid-cols-[0.8fr_1.2fr]" : "md:grid-cols-[1.2fr_0.8fr]")}>
+        <div className="grid gap-3">
+          <div className="h-3 w-20 rounded-full" style={{ backgroundColor: theme.primary, opacity: 0.9 }} />
+          <div className="h-8 w-3/4 rounded-xl" style={{ backgroundColor: theme.text, opacity: 0.9 }} />
+          <div className="h-4 w-full rounded-xl" style={{ backgroundColor: theme.text, opacity: 0.25 }} />
+          <div className={cx("flex gap-3", direction === "rtl" && "flex-row-reverse")}>
+            <div className="h-10 w-32 rounded-full" style={{ backgroundColor: theme.primary }} />
+            <div className="h-10 w-28 rounded-full border" style={{ borderColor: theme.text, opacity: 0.35 }} />
+          </div>
+        </div>
+        <div className="min-h-[160px] rounded-[24px] border" style={{ borderColor: theme.dark ? "rgba(255,255,255,0.1)" : "#cbd5e1" }} />
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {sections.slice(0, 6).map((section) => (
+          <div
+            className="min-h-[92px] rounded-2xl border p-3"
+            key={section}
+            style={{ borderColor: theme.dark ? "rgba(255,255,255,0.1)" : "#cbd5e1" }}
+          >
+            <div className="mb-2 h-3 w-20 rounded-full" style={{ backgroundColor: theme.primary, opacity: 0.8 }} />
+            <div className="h-3 w-full rounded-full" style={{ backgroundColor: theme.text, opacity: 0.2 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PromptPage() {
-  const [mode, setMode] = useState<PromptMode>("free");
+  const [mode, setMode] = useState<PromptMode>("guided");
+  const [modeSelected, setModeSelected] = useState(false);
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [guidedPrompt, setGuidedPrompt] = useState<GuidedPromptState>(DEFAULT_GUIDED_STATE);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [generatedJson, setGeneratedJson] = useState<string>("");
+  const [generatedJson, setGeneratedJson] = useState("");
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>("idle");
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [pendingSuccessMessage, setPendingSuccessMessage] = useState<string | null>(null);
+  const [pendingGeneratedJson, setPendingGeneratedJson] = useState("");
+  const [serverResponseReady, setServerResponseReady] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  const paletteGroups = useMemo(
+    () =>
+      PALETTE_CATEGORY_ORDER.map((category) => ({
+        category,
+        description: PALETTE_CATEGORY_DESCRIPTIONS[category],
+        palettes: PALETTE_LIBRARY.filter((palette) => inferPaletteCategory(palette) === category),
+      })).filter((group) => group.palettes.length > 0),
+    [],
+  );
 
   const effectivePrompt = useMemo(
     () => (mode === "free" ? prompt : buildGuidedPrompt(guidedPrompt)),
     [guidedPrompt, mode, prompt],
   );
-  const selectedSections = useMemo(
-    () => resolveList(guidedPrompt.sections, guidedPrompt.sectionsOther),
-    [guidedPrompt.sections, guidedPrompt.sectionsOther],
+
+  const stepChecklists = useMemo<Record<(typeof GUIDED_STEPS)[number]["id"], StepChecklistItem[]>>(
+    () => ({
+      project: [
+        {
+          label: "Donner un nom ou un descriptif a ton activite",
+          done: Boolean(guidedPrompt.websiteName.trim() || guidedPrompt.businessDescription.trim()),
+        },
+        {
+          label: "Confirmer le type de produit",
+          done: guidedPrompt.product !== DEFAULT_GUIDED_STATE.product,
+        },
+        {
+          label: "Choisir le type de page ou l'objectif",
+          done:
+            guidedPrompt.pageType !== DEFAULT_GUIDED_STATE.pageType || guidedPrompt.goal !== DEFAULT_GUIDED_STATE.goal,
+        },
+      ],
+      message: [
+        {
+          label: "Preciser l'audience",
+          done: guidedPrompt.audience !== DEFAULT_GUIDED_STATE.audience,
+        },
+        {
+          label: "Choisir le ton",
+          done: guidedPrompt.tone !== DEFAULT_GUIDED_STATE.tone,
+        },
+        {
+          label: "Definir le bouton principal",
+          done: guidedPrompt.cta !== DEFAULT_GUIDED_STATE.cta,
+        },
+        {
+          label: "Configurer la langue si besoin",
+          done:
+            guidedPrompt.displayLanguage !== DEFAULT_GUIDED_STATE.displayLanguage ||
+            guidedPrompt.multilingualMode !== DEFAULT_GUIDED_STATE.multilingualMode ||
+            guidedPrompt.directionMode !== DEFAULT_GUIDED_STATE.directionMode,
+        },
+      ],
+      design: [
+        {
+          label: "Choisir une direction visuelle",
+          done:
+            guidedPrompt.style !== DEFAULT_GUIDED_STATE.style || guidedPrompt.uiStyle !== DEFAULT_GUIDED_STATE.uiStyle,
+        },
+        {
+          label: "Personnaliser le menu du haut",
+          done:
+            guidedPrompt.headerVariant !== DEFAULT_GUIDED_STATE.headerVariant ||
+            guidedPrompt.headerSticky !== DEFAULT_GUIDED_STATE.headerSticky ||
+            guidedPrompt.headerTransparency !== DEFAULT_GUIDED_STATE.headerTransparency ||
+            guidedPrompt.headerScrollBehavior !== DEFAULT_GUIDED_STATE.headerScrollBehavior,
+        },
+        {
+          label: "Ajuster les couleurs",
+          done:
+            guidedPrompt.colorMode !== DEFAULT_GUIDED_STATE.colorMode ||
+            guidedPrompt.gradientMode !== DEFAULT_GUIDED_STATE.gradientMode ||
+            guidedPrompt.palette !== DEFAULT_GUIDED_STATE.palette ||
+            guidedPrompt.customPrimary !== DEFAULT_GUIDED_STATE.customPrimary ||
+            guidedPrompt.customSecondary !== DEFAULT_GUIDED_STATE.customSecondary ||
+            guidedPrompt.customAccent !== DEFAULT_GUIDED_STATE.customAccent ||
+            guidedPrompt.customBackground !== DEFAULT_GUIDED_STATE.customBackground ||
+            guidedPrompt.customText !== DEFAULT_GUIDED_STATE.customText ||
+            guidedPrompt.cornerStyle !== DEFAULT_GUIDED_STATE.cornerStyle,
+        },
+      ],
+      ux: [
+        {
+          label: "Choisir un niveau UX",
+          done: guidedPrompt.uxLevel !== DEFAULT_GUIDED_STATE.uxLevel,
+        },
+        {
+          label: "Selectionner les optimisations UX utiles",
+          done: JSON.stringify(guidedPrompt.uxOptions) !== JSON.stringify(DEFAULT_GUIDED_STATE.uxOptions),
+        },
+      ],
+      structure: [
+        {
+          label: "Ajuster les sections affichees",
+          done: JSON.stringify(guidedPrompt.sections) !== JSON.stringify(DEFAULT_GUIDED_STATE.sections),
+        },
+        {
+          label: "Choisir les images d'ouverture ou de galerie",
+          done:
+            guidedPrompt.heroImageMode !== DEFAULT_GUIDED_STATE.heroImageMode ||
+            guidedPrompt.galleryImageCount !== DEFAULT_GUIDED_STATE.galleryImageCount ||
+            guidedPrompt.galleryCustomDescription.trim().length > 0 ||
+            guidedPrompt.heroImageCustomDescription.trim().length > 0,
+        },
+        {
+          label: "Modifier l'affichage media si besoin",
+          done: guidedPrompt.imageDisplay !== DEFAULT_GUIDED_STATE.imageDisplay,
+        },
+      ],
+    }),
+    [guidedPrompt],
   );
-  const previewTheme = useMemo(() => inferPreviewTheme(guidedPrompt), [guidedPrompt]);
-  const previewSections = useMemo(() => {
-    const sections = [...selectedSections];
 
-    if (!sections.includes("navbar")) {
-      sections.unshift("navbar");
+  const stepCompletion = useMemo(
+    () =>
+      GUIDED_STEPS.map((step) => {
+        const checklist = stepChecklists[step.id];
+        const completedCount = checklist.filter((item) => item.done).length;
+        return completedCount > 0;
+      }),
+    [stepChecklists],
+  );
+
+  const completedStepsCount = useMemo(
+    () => stepCompletion.filter(Boolean).length,
+    [stepCompletion],
+  );
+
+  const progressPercent = useMemo(
+    () => Math.round((completedStepsCount / GUIDED_STEPS.length) * 100),
+    [completedStepsCount],
+  );
+
+  const currentStepMeta = GUIDED_STEPS[activeStep];
+  const currentStepChecklist = stepChecklists[currentStepMeta.id];
+  const currentStepDoneCount = currentStepChecklist.filter((item) => item.done).length;
+  const isFreshGuidedStart = completedStepsCount === 0;
+  const loadingStepIndex = Math.min(
+    GENERATION_LOADING_STEPS.length - 1,
+    Math.max(0, Math.floor((loadingProgress / 100) * GENERATION_LOADING_STEPS.length)),
+  );
+
+  const loadingInsights = useMemo(() => {
+    if (mode === "guided") {
+      return [
+        `Objectif: ${guidedPrompt.goal}`,
+        `Audience: ${guidedPrompt.audience}`,
+        `Sections: ${guidedPrompt.sections.length} blocs`,
+        `Couleurs: ${guidedPrompt.colorMode === "palette" ? guidedPrompt.palette : guidedPrompt.colorMode === "custom" ? "Couleurs personnalisees" : "Choix automatique"}`,
+        `Langue: ${guidedPrompt.multilingualMode ? guidedPrompt.supportedLanguages : guidedPrompt.displayLanguage}`,
+        `UX: ${guidedPrompt.uxOptions.length} optimisations actives`,
+      ];
     }
 
-    if (!sections.includes("hero")) {
-      sections.splice(1, 0, "hero");
-    }
+    const promptWordCount = prompt.trim().split(/\s+/).filter(Boolean).length;
+    return [
+      "Description libre detectee",
+      `Brief: ${promptWordCount} mots`,
+      "Analyse de la structure ideale en cours",
+      "Preparation de la page finale",
+    ];
+  }, [guidedPrompt, mode, prompt]);
 
-    if (previewTheme.galleryCount > 0 && !sections.includes("gallery")) {
-      const footerIndex = sections.indexOf("footer");
-      if (footerIndex >= 0) {
-        sections.splice(footerIndex, 0, "gallery");
-      } else {
-        sections.push("gallery");
+  function toggleSection(section: (typeof SECTION_OPTIONS)[number]) {
+    setGuidedPrompt((prev) => {
+      const isActive = prev.sections.includes(section);
+
+      if (isActive) {
+        return {
+          ...prev,
+          sections: prev.sections.filter((item) => item !== section),
+          galleryImageCount: section === "gallery" ? "0" : prev.galleryImageCount,
+          galleryDescriptionMode: section === "gallery" ? "context" : prev.galleryDescriptionMode,
+        };
       }
-    }
 
-    if (!sections.includes("footer")) {
-      sections.push("footer");
-    }
+      return {
+        ...prev,
+        sections: [...prev.sections, section],
+        galleryImageCount: section === "gallery" && prev.galleryImageCount === "0" ? "3" : prev.galleryImageCount,
+        imageDisplay: section === "gallery" && prev.imageDisplay === "auto" ? "grid" : prev.imageDisplay,
+      };
+    });
+  }
 
-    return sections;
-  }, [previewTheme.galleryCount, selectedSections]);
-  const completionRatio = ((activeStep + 1) / GUIDED_STEPS.length) * 100;
+  function toggleUxOption(option: string) {
+    setGuidedPrompt((prev) => {
+      const active = prev.uxOptions.includes(option);
+      return {
+        ...prev,
+        uxOptions: active ? prev.uxOptions.filter((item) => item !== option) : [...prev.uxOptions, option],
+      };
+    });
+  }
 
-  function handleReset() {
-    if (mode === "free") {
-      setPrompt(DEFAULT_PROMPT);
-      return;
-    }
-
-    setGuidedPrompt(DEFAULT_GUIDED_STATE);
+  function applyStarterPreset(preset: StarterPreset) {
+    setGuidedPrompt((prev) => ({ ...prev, ...preset.apply }));
     setActiveStep(0);
   }
 
-  function handleNextStep() {
-    setActiveStep((prev) => Math.min(prev + 1, GUIDED_STEPS.length - 1));
-  }
+  useEffect(() => {
+    try {
+      const rawDraft = window.localStorage.getItem(PROMPT_DRAFT_STORAGE_KEY);
+      if (!rawDraft) return;
 
-  function handlePreviousStep() {
-    setActiveStep((prev) => Math.max(prev - 1, 0));
-  }
+      const draft = JSON.parse(rawDraft) as {
+        mode?: PromptMode;
+        modeSelected?: boolean;
+        prompt?: string;
+        guidedPrompt?: GuidedPromptState;
+        activeStep?: number;
+      };
+
+      if (draft.mode === "free" || draft.mode === "guided") {
+        setMode(draft.mode);
+      }
+      if (typeof draft.modeSelected === "boolean") {
+        setModeSelected(draft.modeSelected);
+      }
+      if (typeof draft.prompt === "string" && draft.prompt.trim()) {
+        setPrompt(draft.prompt);
+      }
+      if (draft.guidedPrompt && typeof draft.guidedPrompt === "object") {
+        setGuidedPrompt((prev) => ({ ...prev, ...draft.guidedPrompt }));
+      }
+      if (typeof draft.activeStep === "number") {
+        setActiveStep(Math.max(0, Math.min(draft.activeStep, GUIDED_STEPS.length - 1)));
+      }
+      setDraftSaveState("saved");
+    } catch {
+      window.localStorage.removeItem(PROMPT_DRAFT_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PROMPT_DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          mode,
+          modeSelected,
+          prompt,
+          guidedPrompt,
+          activeStep,
+        }),
+      );
+      setDraftSaveState("saved");
+    } catch {
+      // Ignore localStorage errors in restricted environments.
+    }
+  }, [activeStep, guidedPrompt, mode, modeSelected, prompt]);
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingProgress(0);
+      setLoadingMessageIndex(0);
+      return;
+    }
+
+    setLoadingProgress(0);
+    setLoadingMessageIndex(0);
+    setServerResponseReady(false);
+    setPendingSuccessMessage(null);
+    setPendingGeneratedJson("");
+
+    const progressInterval = window.setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 100) return prev;
+        return Math.min(prev + 1, 100);
+      });
+    }, 1000);
+
+    const messageInterval = window.setInterval(() => {
+      setLoadingMessageIndex((prev) => (prev + 1) % GENERATION_ASSISTANT_MESSAGES.length);
+    }, 2400);
+
+    return () => {
+      window.clearInterval(progressInterval);
+      window.clearInterval(messageInterval);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading || !serverResponseReady || loadingProgress < 100) {
+      return;
+    }
+
+    setLoading(false);
+    setSuccessMessage(pendingSuccessMessage ?? "La page a ete generee avec succes.");
+    setGeneratedJson(pendingGeneratedJson);
+    setShowCompletionModal(true);
+  }, [loading, loadingProgress, pendingGeneratedJson, pendingSuccessMessage, serverResponseReady]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
+    setShowCompletionModal(false);
 
     try {
       const themeConstraint = mode === "guided" ? buildThemeConstraint(guidedPrompt) : null;
+      const localizationConstraint = mode === "guided" ? buildLocalizationConstraint(guidedPrompt) : null;
       const response = await fetch("/api/generate-page", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: effectivePrompt, themeConstraint }),
+        body: JSON.stringify({ prompt: effectivePrompt, themeConstraint, localizationConstraint }),
       });
 
       const payload = (await response.json()) as GenerateResponse;
@@ -2702,1720 +1688,1226 @@ export default function PromptPage() {
         throw new Error(payload.error ?? "La generation a echoue.");
       }
 
-      setSuccessMessage(payload.message ?? "La page a ete generee avec succes.");
-      setGeneratedJson(JSON.stringify(payload.page, null, 2));
+      setPendingSuccessMessage(payload.message ?? "La page a ete generee avec succes.");
+      setPendingGeneratedJson(JSON.stringify(payload.page, null, 2));
+      setServerResponseReady(true);
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Une erreur inconnue est survenue.",
-      );
-    } finally {
+      setError(submitError instanceof Error ? submitError.message : "Une erreur inconnue est survenue.");
       setLoading(false);
+    } finally {
+      // La fermeture du modal de generation est geree apres 100%.
     }
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        py: { xs: 4, md: 6 },
-        bgcolor: CAPTURIA_COLORS.surface,
-        background:
-          "radial-gradient(circle at top left, rgba(20,184,166,0.10), transparent 24%), radial-gradient(circle at top right, rgba(15,23,42,0.08), transparent 26%), linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)",
-      }}
+    <div
+      className={cx(
+        "min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.10),transparent_24%),radial-gradient(circle_at_top_right,rgba(15,23,42,0.08),transparent_26%),linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] py-8",
+        modeSelected && mode === "guided" && "pb-36 xl:pb-8",
+      )}
     >
-      <Container maxWidth="lg">
-        <Stack spacing={4}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: 6,
-              border: "1px solid",
-              borderColor: CAPTURIA_COLORS.border,
-              bgcolor: "rgba(255,255,255,0.88)",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
-              position: "relative",
-              overflow: "hidden",
-            }}
+      <div className="pointer-events-none fixed right-4 top-4 z-[70]">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-200 bg-white/92 px-3 py-3 shadow-[0_16px_36px_rgba(15,23,42,0.12)] backdrop-blur">
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white"
+            href="/dashboard"
           >
-            <Box
-              sx={{
-                position: "absolute",
-                top: -80,
-                right: -60,
-                width: 220,
-                height: 220,
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(20,184,166,0.16), transparent 68%)",
-                animation: "capturiaFloat 10s ease-in-out infinite",
-                "@keyframes capturiaFloat": {
-                  "0%, 100%": { transform: "translateY(0px)" },
-                  "50%": { transform: "translateY(16px)" },
-                },
-              }}
-            />
-            <Stack spacing={2.5} sx={{ position: "relative" }}>
-              <Chip
-                icon={<AutoAwesomeRoundedIcon />}
-                label="Capturia Prompt Studio"
-                sx={{
-                  alignSelf: "flex-start",
-                  px: 1,
-                  color: CAPTURIA_COLORS.navy,
-                  bgcolor: "rgba(20,184,166,0.10)",
-                  borderColor: "rgba(20,184,166,0.24)",
-                  fontWeight: 700,
-                }}
-                variant="outlined"
-              />
-              <Typography
-                gutterBottom
-                sx={{
-                  color: CAPTURIA_COLORS.navy,
-                  fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                }}
-                variant="h2"
-              >
-                Generer une page depuis un prompt
-              </Typography>
-              <Typography sx={{ maxWidth: 920, color: CAPTURIA_COLORS.textMuted }} variant="body1">
-                Utilise le mode libre si tu veux tout ecrire toi-meme, ou le mode guide si tu
-                veux construire un brief tres complet avec beaucoup de suggestions. Le serveur
-                validera ensuite la reponse contre le DSL puis enregistrera le JSON dans
-                <code> data/page.json</code>.
-              </Typography>
-            </Stack>
-          </Paper>
-
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: 6,
-              border: "1px solid",
-              borderColor: CAPTURIA_COLORS.border,
-              bgcolor: CAPTURIA_COLORS.white,
-              boxShadow: "0 24px 70px rgba(15,23,42,0.08)",
-            }}
+            Espace de travail
+          </Link>
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:-translate-y-0.5 hover:bg-black hover:!text-white"
+            href="/edition"
           >
-            <Box
-              component="form"
-              onSubmit={handleSubmit}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 3,
-                  backgroundColor: CAPTURIA_COLORS.surface,
-                  transition: "all 180ms ease",
-                  "&:hover": {
-                    boxShadow: `0 0 0 4px ${alpha(CAPTURIA_COLORS.teal, 0.06)}`,
-                  },
-                },
-                "& .MuiInputBase-input": {
-                  color: CAPTURIA_COLORS.navySoft,
-                },
-                "& .MuiFormLabel-root": {
-                  color: CAPTURIA_COLORS.textMuted,
-                  fontWeight: 600,
-                },
-                "& .MuiFormLabel-root.Mui-focused": {
-                  color: CAPTURIA_COLORS.tealDark,
-                },
-                "& .MuiFormHelperText-root": {
-                  color: CAPTURIA_COLORS.textMuted,
-                  marginLeft: 2,
-                  marginTop: 1,
-                },
-                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: CAPTURIA_COLORS.tealDark,
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: CAPTURIA_COLORS.border,
-                },
-              }}
-            >
-              <Stack spacing={3}>
-                <Tabs
-                  value={mode}
-                  onChange={(_, value: PromptMode) => setMode(value)}
-                  variant="fullWidth"
-                  sx={{
-                    p: 0.75,
-                    borderRadius: 999,
-                    bgcolor: CAPTURIA_COLORS.surface,
-                    border: "1px solid",
-                    borderColor: CAPTURIA_COLORS.border,
-                    "& .MuiTabs-indicator": {
-                      display: "none",
-                    },
-                    "& .MuiTab-root": {
-                      minHeight: 52,
-                      borderRadius: 999,
-                      color: CAPTURIA_COLORS.textMuted,
-                      fontWeight: 700,
-                      textTransform: "none",
-                    },
-                    "& .Mui-selected": {
-                      color: `${CAPTURIA_COLORS.navy} !important`,
-                      bgcolor: CAPTURIA_COLORS.white,
-                      boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
-                    },
-                  }}
-                >
-                  <Tab label="Prompt libre" value="free" />
-                  <Tab label="Prompt guide ultra complet" value="guided" />
-                </Tabs>
+            Modifier la page
+          </Link>
+        </div>
+      </div>
+      {loading ? (
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950/45 backdrop-blur-[6px]">
+          <div className="mx-auto flex min-h-full w-[min(1180px,calc(100%-24px))] items-start justify-center py-4 sm:py-6 xl:items-center xl:py-8">
+            <div className="grid max-h-[calc(100vh-32px)] w-full gap-6 overflow-y-auto rounded-[32px] border border-white/20 bg-white/96 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.28)] xl:grid-cols-[1.15fr_0.85fr] xl:p-8">
+              <div className="grid gap-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.14em] text-teal-700">Creation en cours</p>
+                    <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-slate-950">
+                      Ta page prend forme
+                    </h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                      L&apos;assistant construit la structure, affine le message et prepare un rendu coherent avec tes choix.
+                    </p>
+                  </div>
+                  <div className="hidden sm:block">
+                    <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                      Minimum 100 secondes
+                    </div>
+                  </div>
+                </div>
 
-                {mode === "free" ? (
-                  <TextField
-                    fullWidth
-                    helperText="Reste descriptif: produit, audience, ton, sections souhaitees, style visuel, CTA, contraintes."
-                    label="Prompt de generation"
-                    minRows={10}
-                    multiline
-                    placeholder="Ex: Genere une landing page SaaS moderne pour Capturia, avec une hero claire, preuves sociales, comparatif, CTA demo et palette navy + teal rassurante."
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        alignItems: "flex-start",
-                        borderRadius: 4,
-                        bgcolor: CAPTURIA_COLORS.surface,
-                        boxShadow: "inset 0 1px 2px rgba(15,23,42,0.03)",
-                      },
-                    }}
-                    value={prompt}
-                    onChange={(event) => setPrompt(event.target.value)}
-                  />
-                ) : (
-                  <Stack spacing={3}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: { xs: 3, md: 4 },
-                        borderRadius: 7,
-                        color: "common.white",
-                        border: "1px solid",
-                        borderColor: "rgba(255,255,255,0.12)",
-                        background:
-                          `linear-gradient(135deg, ${CAPTURIA_COLORS.navy} 0%, ${CAPTURIA_COLORS.navySoft} 48%, ${CAPTURIA_COLORS.tealDark} 100%)`,
-                        boxShadow: "0 30px 80px rgba(20,184,166,0.18)",
-                        overflow: "hidden",
-                        position: "relative",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          inset: 0,
-                          background:
-                            "radial-gradient(circle at top right, rgba(255,255,255,0.16), transparent 32%)",
-                          pointerEvents: "none",
-                        }}
-                      />
-                      <Stack spacing={2} sx={{ position: "relative" }}>
-                        <Stack
-                          alignItems={{ xs: "flex-start", md: "center" }}
-                          direction={{ xs: "column", md: "row" }}
-                          justifyContent="space-between"
-                          spacing={2}
+                <LoadingProgressTrack progress={loadingProgress} />
+
+                <LoadingRobotScene />
+
+                <div className="grid gap-3">
+                  {GENERATION_LOADING_STEPS.map((step, index) => {
+                    const isDone = index < loadingStepIndex;
+                    const isActive = index === loadingStepIndex;
+
+                    return (
+                      <div
+                        className={cx(
+                          "flex items-start gap-4 rounded-[24px] border p-4 transition",
+                          isDone && "border-emerald-200 bg-emerald-50/70",
+                          isActive && "border-teal-300 bg-teal-50 shadow-sm",
+                          !isDone && !isActive && "border-slate-200 bg-white",
+                        )}
+                        key={step.title}
+                      >
+                        <div
+                          className={cx(
+                            "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                            isDone && "bg-emerald-600 text-white",
+                            isActive && "bg-teal-600 text-white",
+                            !isDone && !isActive && "bg-slate-100 text-slate-500",
+                          )}
                         >
-                          <Stack spacing={1.2}>
-                            <Chip
-                              icon={<AutoAwesomeRoundedIcon />}
-                              label="Assistant guide premium"
-                              sx={{
-                                alignSelf: "flex-start",
-                                color: "inherit",
-                                bgcolor: "rgba(255,255,255,0.12)",
-                                borderColor: "rgba(255,255,255,0.18)",
-                              }}
-                              variant="outlined"
-                            />
-                            <Typography variant="h4">
-                              Construit ton brief etape par etape
-                            </Typography>
-                            <Typography sx={{ color: "rgba(255,255,255,0.82)", maxWidth: 760 }}>
-                              Ce parcours transforme le gros formulaire en workflow guide. Chaque
-                              etape affine le rendu visuel, le message et la conversion pour obtenir
-                              une page plus professionnelle.
-                            </Typography>
-                            <Stack direction="row" flexWrap="wrap" gap={1}>
-                              {["Style Capturia", "Conversion first", "Prompt securise"].map((item) => (
-                                <Chip
-                                  key={item}
-                                  label={item}
-                                  size="small"
-                                  sx={{
-                                    color: "common.white",
-                                    bgcolor: "rgba(255,255,255,0.08)",
-                                    border: "1px solid rgba(255,255,255,0.10)",
-                                  }}
-                                />
-                              ))}
-                            </Stack>
-                          </Stack>
-                          <Paper
-                            elevation={0}
-                            sx={{
-                              minWidth: { xs: "100%", md: 240 },
-                              p: 2,
-                              borderRadius: 4,
-                              bgcolor: "rgba(255,255,255,0.1)",
-                              border: "1px solid rgba(255,255,255,0.14)",
-                              backdropFilter: "blur(10px)",
-                              boxShadow: "0 18px 40px rgba(15,23,42,0.16)",
-                            }}
-                          >
-                            <Stack spacing={1}>
-                              <Typography sx={{ color: "rgba(255,255,255,0.75)" }} variant="body2">
-                                Progression
-                              </Typography>
-                              <Typography variant="h5">
-                                {activeStep + 1}/{GUIDED_STEPS.length}
-                              </Typography>
-                              <LinearProgress
-                                sx={{
-                                  height: 8,
-                                  borderRadius: 999,
-                                  bgcolor: "rgba(255,255,255,0.16)",
-                                  "& .MuiLinearProgress-bar": {
-                                    borderRadius: 999,
-                                    bgcolor: CAPTURIA_COLORS.teal,
-                                  },
-                                }}
-                                value={completionRatio}
-                                variant="determinate"
-                              />
-                            </Stack>
-                          </Paper>
-                        </Stack>
-                        <Box
-                          sx={{
-                            display: "grid",
-                            gridTemplateColumns: {
-                              xs: "repeat(2, minmax(0, 1fr))",
-                              md: "repeat(4, minmax(0, 1fr))",
-                            },
-                            gap: 1.5,
-                          }}
-                        >
-                          {GUIDED_HIGHLIGHTS.map((item) => (
-                            <Paper
-                              key={item.label}
-                              elevation={0}
-                              sx={{
-                                p: 1.75,
-                                borderRadius: 4,
-                                bgcolor: "rgba(255,255,255,0.08)",
-                                border: "1px solid rgba(255,255,255,0.10)",
-                                backdropFilter: "blur(6px)",
-                              }}
-                            >
-                              <Typography sx={{ color: "rgba(255,255,255,0.66)" }} variant="caption">
-                                {item.label}
-                              </Typography>
-                              <Typography sx={{ mt: 0.4, fontWeight: 700 }} variant="body1">
-                                {item.value}
-                              </Typography>
-                            </Paper>
-                          ))}
-                        </Box>
-                      </Stack>
-                    </Paper>
+                          {isDone ? "✓" : index + 1}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900">{step.title}</p>
+                            {isActive ? (
+                              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">
+                                En cours
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm leading-6 text-slate-500">{step.description}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 1.65fr) 340px" },
-                        gap: 3,
-                        alignItems: "start",
-                      }}
-                    >
-                      <Stack spacing={3}>
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: 6,
-                            border: "1px solid",
-                            borderColor: CAPTURIA_COLORS.border,
-                            bgcolor: CAPTURIA_COLORS.white,
-                            boxShadow: "0 18px 40px rgba(15,23,42,0.05)",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              display: "grid",
-                              gridTemplateColumns: {
-                                xs: "1fr",
-                                sm: "repeat(2, minmax(0, 1fr))",
-                                lg: "repeat(3, minmax(0, 1fr))",
-                              },
-                              gap: 1.25,
-                            }}
-                          >
-                            {GUIDED_STEPS.map((step, index) => {
-                              const Icon = GUIDED_STEP_ICONS[index];
-                              const isActive = index === activeStep;
-                              const isCompleted = index < activeStep;
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Assistant</p>
+                  <div className="mt-3 flex gap-3">
+                    <div className="mt-1 flex gap-1">
+                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500 animate-bounce [animation-delay:-0.2s]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-cyan-500 animate-bounce [animation-delay:-0.1s]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-900 animate-bounce" />
+                    </div>
+                    <p className="text-sm leading-7 text-slate-700">
+                      {GENERATION_ASSISTANT_MESSAGES[loadingMessageIndex]}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                              return (
-                                <ButtonBase
-                                  key={step.label}
-                                  focusRipple
-                                  onClick={() => setActiveStep(index)}
-                                  sx={{
-                                    width: "100%",
-                                    textAlign: "left",
-                                    borderRadius: 4,
-                                    justifyContent: "stretch",
-                                  }}
-                                >
-                                  <Paper
-                                    elevation={0}
-                                    sx={{
-                                      width: "100%",
-                                      p: 2,
-                                      borderRadius: 4,
-                                      border: "1px solid",
-                                      borderColor: isActive
-                                        ? alpha(CAPTURIA_COLORS.teal, 0.45)
-                                        : CAPTURIA_COLORS.border,
-                                      bgcolor: isActive
-                                        ? alpha(CAPTURIA_COLORS.teal, 0.08)
-                                        : isCompleted
-                                          ? alpha(CAPTURIA_COLORS.navy, 0.02)
-                                          : CAPTURIA_COLORS.surface,
-                                      boxShadow: isActive
-                                        ? "0 18px 34px rgba(20,184,166,0.12)"
-                                        : "0 6px 18px rgba(15,23,42,0.03)",
-                                      transition: "all 180ms ease",
-                                      "&:hover": {
-                                        transform: "translateY(-1px)",
-                                        boxShadow: "0 18px 34px rgba(15,23,42,0.08)",
-                                      },
-                                    }}
-                                  >
-                                    <Stack direction="row" spacing={1.5}>
-                                      <Box
-                                        sx={{
-                                          width: 44,
-                                          height: 44,
-                                          borderRadius: 3,
-                                          display: "grid",
-                                          placeItems: "center",
-                                          bgcolor: isActive
-                                            ? CAPTURIA_COLORS.teal
-                                            : isCompleted
-                                              ? alpha(CAPTURIA_COLORS.tealDark, 0.16)
-                                              : CAPTURIA_COLORS.white,
-                                          color: isActive
-                                            ? CAPTURIA_COLORS.white
-                                            : isCompleted
-                                              ? CAPTURIA_COLORS.tealDark
-                                              : CAPTURIA_COLORS.navySoft,
-                                          border: `1px solid ${
-                                            isActive
-                                              ? alpha(CAPTURIA_COLORS.teal, 0.5)
-                                              : alpha(CAPTURIA_COLORS.border, 0.9)
-                                          }`,
-                                        }}
-                                      >
-                                        <Icon fontSize="small" />
-                                      </Box>
-                                      <Box sx={{ minWidth: 0 }}>
-                                        <Typography
-                                          sx={{
-                                            color: CAPTURIA_COLORS.textMuted,
-                                            fontSize: 12,
-                                            fontWeight: 800,
-                                            letterSpacing: "0.06em",
-                                            textTransform: "uppercase",
-                                          }}
-                                        >
-                                          {`Etape ${index + 1}`}
-                                        </Typography>
-                                        <Typography
-                                          sx={{
-                                            color: CAPTURIA_COLORS.navy,
-                                            fontWeight: 800,
-                                            lineHeight: 1.2,
-                                            mt: 0.35,
-                                          }}
-                                          variant="body1"
-                                        >
-                                          {step.label}
-                                        </Typography>
-                                        <Typography
-                                          sx={{
-                                            color: CAPTURIA_COLORS.textMuted,
-                                            mt: 0.5,
-                                            display: "-webkit-box",
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: "vertical",
-                                            overflow: "hidden",
-                                          }}
-                                          variant="body2"
-                                        >
-                                          {step.description}
-                                        </Typography>
-                                      </Box>
-                                    </Stack>
-                                  </Paper>
-                                </ButtonBase>
-                              );
-                            })}
-                          </Box>
-                        </Paper>
-
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: { xs: 2, md: 3 },
-                            borderRadius: 5,
-                            border: "1px solid",
-                            borderColor: CAPTURIA_COLORS.border,
-                            bgcolor: "background.paper",
-                            boxShadow: "0 20px 44px rgba(15,23,42,0.06)",
-                            position: "relative",
-                            overflow: "hidden",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              height: 4,
-                              background: `linear-gradient(90deg, ${CAPTURIA_COLORS.teal}, ${CAPTURIA_COLORS.tealDark})`,
-                            }}
-                          />
-                          <Stack spacing={2.5}>
-                            <Stack
-                              alignItems={{ xs: "flex-start", md: "center" }}
-                              direction={{ xs: "column", md: "row" }}
-                              justifyContent="space-between"
-                              spacing={2}
-                            >
-                              <Box>
-                                <Typography
-                                  sx={{ color: CAPTURIA_COLORS.tealDark }}
-                                  fontWeight={800}
-                                  variant="overline"
-                                >
-                                  Etape {activeStep + 1}
-                                </Typography>
-                                <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="h5">
-                                  {GUIDED_STEPS[activeStep].title}
-                                </Typography>
-                                <Typography sx={{ mt: 0.5, color: CAPTURIA_COLORS.textMuted }}>
-                                  {GUIDED_STEPS[activeStep].description}
-                                </Typography>
-                              </Box>
-                              <Chip
-                                label={`${selectedSections.length} sections selectionnees`}
-                                sx={{
-                                  borderColor: "rgba(20,184,166,0.18)",
-                                  bgcolor: "rgba(20,184,166,0.08)",
-                                  color: CAPTURIA_COLORS.navySoft,
-                                  fontWeight: 600,
-                                }}
-                                variant="outlined"
-                              />
-                            </Stack>
-
-                            <Fade in key={activeStep} timeout={350}>
-                              <Box>
-                                {activeStep === 0 ? (
-                                  <Stack spacing={3}>
-                                    <FieldPanel
-                                      title="Identite du projet"
-                                      description="Commence par definir le nom du site et decrire clairement l'activite."
-                                    >
-                                      <Stack spacing={2}>
-                                        <TextField
-                                          fullWidth
-                                          label="Nom du site web"
-                                          placeholder="Ex: Capturia, CyberPrep, Atelier Luna..."
-                                          value={guidedPrompt.websiteName}
-                                          onChange={(event) =>
-                                            setGuidedPrompt((prev) => ({
-                                              ...prev,
-                                              websiteName: event.target.value,
-                                            }))
-                                          }
-                                        />
-                                        <TextField
-                                          fullWidth
-                                          label="Descriptif de l'activite"
-                                          minRows={3}
-                                          multiline
-                                          placeholder="Ex: Plateforme qui aide les entreprises a capturer, qualifier et convertir leurs leads automatiquement."
-                                          value={guidedPrompt.businessDescription}
-                                          onChange={(event) =>
-                                            setGuidedPrompt((prev) => ({
-                                              ...prev,
-                                              businessDescription: event.target.value,
-                                            }))
-                                          }
-                                        />
-                                      </Stack>
-                                    </FieldPanel>
-                                    <SelectWithOtherField
-                                      label="Produit / offre"
-                                      value={guidedPrompt.product}
-                                      otherValue={guidedPrompt.productOther}
-                                      options={PRODUCT_OPTIONS}
-                                      onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, product: value }))}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, productOther: value }))}
-                                      placeholder="Ex: plateforme de formation cyber, agence no-code premium..."
-                                    />
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Type de page"
-                                        value={guidedPrompt.pageType}
-                                        otherValue={guidedPrompt.pageTypeOther}
-                                        options={PAGE_TYPE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, pageType: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, pageTypeOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Objectif principal"
-                                        value={guidedPrompt.goal}
-                                        otherValue={guidedPrompt.goalOther}
-                                        options={GOAL_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, goal: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, goalOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Niveau de complexite"
-                                        value={guidedPrompt.complexity}
-                                        otherValue={guidedPrompt.complexityOther}
-                                        options={COMPLEXITY_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, complexity: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, complexityOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Longueur de page"
-                                        value={guidedPrompt.pageLength}
-                                        otherValue={guidedPrompt.pageLengthOther}
-                                        options={PAGE_LENGTH_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, pageLength: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, pageLengthOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Audience cible"
-                                        value={guidedPrompt.audience}
-                                        otherValue={guidedPrompt.audienceOther}
-                                        options={AUDIENCE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, audience: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, audienceOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Niveau de conscience"
-                                        value={guidedPrompt.awarenessLevel}
-                                        otherValue={guidedPrompt.awarenessLevelOther}
-                                        options={AWARENESS_LEVEL_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, awarenessLevel: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, awarenessLevelOther: value }))}
-                                      />
-                                    </Stack>
-                                    <SelectWithOtherField
-                                      label="Zone geographique / langue"
-                                      value={guidedPrompt.geography}
-                                      otherValue={guidedPrompt.geographyOther}
-                                      options={GEOGRAPHY_OPTIONS}
-                                      onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, geography: value }))}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, geographyOther: value }))}
-                                    />
-                                  </Stack>
-                                ) : null}
-
-                                {activeStep === 1 ? (
-                                  <Stack spacing={3}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Promesse principale"
-                                        value={guidedPrompt.promise}
-                                        otherValue={guidedPrompt.promiseOther}
-                                        options={PROMISE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, promise: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, promiseOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Angle marketing"
-                                        value={guidedPrompt.marketingAngle}
-                                        otherValue={guidedPrompt.marketingAngleOther}
-                                        options={MARKETING_ANGLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, marketingAngle: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, marketingAngleOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Niveau de preuve"
-                                        value={guidedPrompt.proofLevel}
-                                        otherValue={guidedPrompt.proofLevelOther}
-                                        options={PROOF_LEVEL_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, proofLevel: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, proofLevelOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Ton"
-                                        value={guidedPrompt.tone}
-                                        otherValue={guidedPrompt.toneOther}
-                                        options={TONE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, tone: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, toneOther: value }))}
-                                      />
-                                    </Stack>
-                                    <SelectWithOtherField
-                                      label="Style de copywriting"
-                                      value={guidedPrompt.copyStyle}
-                                      otherValue={guidedPrompt.copyStyleOther}
-                                      options={COPY_STYLE_OPTIONS}
-                                      onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, copyStyle: value }))}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, copyStyleOther: value }))}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      label="Promesse en une phrase"
-                                      value={guidedPrompt.promiseSentence}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, promiseSentence: event.target.value }))}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      label="Objection principale du visiteur"
-                                      value={guidedPrompt.mainObjection}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, mainObjection: event.target.value }))}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      label="Element differentiant principal"
-                                      value={guidedPrompt.differentiator}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, differentiator: event.target.value }))}
-                                    />
-                                  </Stack>
-                                ) : null}
-
-                                {activeStep === 2 ? (
-                                  <Stack spacing={3}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Direction artistique"
-                                        value={guidedPrompt.style}
-                                        otherValue={guidedPrompt.styleOther}
-                                        options={STYLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, style: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, styleOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Ambiance"
-                                        value={guidedPrompt.ambiance}
-                                        otherValue={guidedPrompt.ambianceOther}
-                                        options={AMBIANCE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, ambiance: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, ambianceOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Style d'interface"
-                                        value={guidedPrompt.uiStyle}
-                                        otherValue={guidedPrompt.uiStyleOther}
-                                        options={UI_STYLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, uiStyle: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, uiStyleOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Forme"
-                                        value={guidedPrompt.cornerStyle}
-                                        otherValue={guidedPrompt.cornerStyleOther}
-                                        options={CORNER_STYLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, cornerStyle: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, cornerStyleOther: value }))}
-                                      />
-                                    </Stack>
-                                    <TextField
-                                      fullWidth
-                                      label="Reference visuelle"
-                                      placeholder="Ex: inspire de Linear, Notion, Apple, magazine luxe, application mobile premium..."
-                                      value={guidedPrompt.referenceVisual}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, referenceVisual: event.target.value }))}
-                                    />
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <TextField
-                                        fullWidth
-                                        label="Emotion a provoquer"
-                                        value={guidedPrompt.emotion}
-                                        onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, emotion: event.target.value }))}
-                                      />
-                                      <TextField
-                                        fullWidth
-                                        label="Action en moins de 10 secondes"
-                                        value={guidedPrompt.quickAction}
-                                        onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, quickAction: event.target.value }))}
-                                      />
-                                    </Stack>
-                                    <TextField
-                                      fullWidth
-                                      label="Gestion des couleurs"
-                                      select
-                                      value={guidedPrompt.colorMode}
-                                      onChange={(event) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          colorMode: event.target.value as ColorMode,
-                                        }))
-                                      }
-                                    >
-                                      {COLOR_MODE_OPTIONS.map((option) => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                          {option.label}
-                                        </MenuItem>
-                                      ))}
-                                    </TextField>
-                                    <TextField
-                                      fullWidth
-                                      label="Gradients"
-                                      select
-                                      value={guidedPrompt.gradientMode}
-                                      onChange={(event) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          gradientMode: event.target.value as GradientMode,
-                                        }))
-                                      }
-                                      helperText="Tu peux imposer un rendu plus flat ou laisser le modele utiliser des gradients."
-                                    >
-                                      {GRADIENT_MODE_OPTIONS.map((option) => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                          {option.label}
-                                        </MenuItem>
-                                      ))}
-                                    </TextField>
-                                    {guidedPrompt.colorMode === "palette" ? (
-                                      <PaletteSelector
-                                        value={guidedPrompt.palette}
-                                        otherValue={guidedPrompt.paletteOther}
-                                        gradientMode={guidedPrompt.gradientMode}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, palette: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, paletteOther: value }))}
-                                      />
-                                    ) : null}
-                                    {guidedPrompt.colorMode === "custom" ? (
-                                      <Stack direction={{ xs: "column", md: "row" }} flexWrap="wrap" gap={2}>
-                                        <TextField
-                                          label="Couleur primaire"
-                                          type="color"
-                                          value={guidedPrompt.customPrimary}
-                                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, customPrimary: event.target.value }))}
-                                          sx={{ minWidth: 160 }}
-                                          InputLabelProps={{ shrink: true }}
-                                        />
-                                        <TextField
-                                          label="Couleur secondaire"
-                                          type="color"
-                                          value={guidedPrompt.customSecondary}
-                                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, customSecondary: event.target.value }))}
-                                          sx={{ minWidth: 160 }}
-                                          InputLabelProps={{ shrink: true }}
-                                        />
-                                        <TextField
-                                          label="Couleur accent"
-                                          type="color"
-                                          value={guidedPrompt.customAccent}
-                                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, customAccent: event.target.value }))}
-                                          sx={{ minWidth: 160 }}
-                                          InputLabelProps={{ shrink: true }}
-                                        />
-                                        <TextField
-                                          label="Fond"
-                                          type="color"
-                                          value={guidedPrompt.customBackground}
-                                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, customBackground: event.target.value }))}
-                                          sx={{ minWidth: 160 }}
-                                          InputLabelProps={{ shrink: true }}
-                                        />
-                                        <TextField
-                                          label="Texte"
-                                          type="color"
-                                          value={guidedPrompt.customText}
-                                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, customText: event.target.value }))}
-                                          sx={{ minWidth: 160 }}
-                                          InputLabelProps={{ shrink: true }}
-                                        />
-                                      </Stack>
-                                    ) : null}
-                                  </Stack>
-                                ) : null}
-
-                                {activeStep === 3 ? (
-                                  <Stack spacing={3}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Disposition hero"
-                                        value={guidedPrompt.heroLayout}
-                                        otherValue={guidedPrompt.heroLayoutOther}
-                                        options={HERO_LAYOUT_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroLayout: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroLayoutOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Contenu hero"
-                                        value={guidedPrompt.heroContent}
-                                        otherValue={guidedPrompt.heroContentOther}
-                                        options={HERO_CONTENT_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroContent: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroContentOther: value }))}
-                                      />
-                                    </Stack>
-                                    <SelectWithOtherField
-                                      label="Media hero"
-                                      value={guidedPrompt.heroMedia}
-                                      otherValue={guidedPrompt.heroMediaOther}
-                                      options={HERO_MEDIA_OPTIONS}
-                                      onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroMedia: value }))}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, heroMediaOther: value }))}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      label="Image de la section hero"
-                                      select
-                                      value={guidedPrompt.heroImageMode}
-                                      onChange={(event) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          heroImageMode: event.target.value as HeroImageMode,
-                                        }))
-                                      }
-                                    >
-                                      {HERO_IMAGE_OPTIONS.map((option) => (
-                                        <MenuItem key={option.value} value={option.value}>
-                                          {option.label}
-                                        </MenuItem>
-                                      ))}
-                                    </TextField>
-                                    {guidedPrompt.heroImageMode === "custom" ? (
-                                      <TextField
-                                        fullWidth
-                                        helperText="Ex: dashboard cyber premium sur ecran sombre, plat signature en gros plan, mockup iPhone moderne..."
-                                        label="Descriptif de l'image hero"
-                                        minRows={3}
-                                        multiline
-                                        value={guidedPrompt.heroImageCustomDescription}
-                                        onChange={(event) =>
-                                          setGuidedPrompt((prev) => ({
-                                            ...prev,
-                                            heroImageCustomDescription: event.target.value,
-                                          }))
-                                        }
-                                      />
-                                    ) : null}
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <TextField
-                                        fullWidth
-                                        label="Nombre de visuels de galerie"
-                                        select
-                                        value={guidedPrompt.galleryImageCount}
-                                        onChange={(event) =>
-                                          setGuidedPrompt((prev) => ({ ...prev, galleryImageCount: event.target.value }))
-                                        }
-                                      >
-                                        {GALLERY_IMAGE_COUNT_OPTIONS.map((option) => (
-                                          <MenuItem key={option} value={option}>
-                                            {option}
-                                          </MenuItem>
-                                        ))}
-                                      </TextField>
-                                      <SelectWithOtherField
-                                        label="Affichage de la galerie"
-                                        value={guidedPrompt.imageDisplay}
-                                        otherValue={guidedPrompt.imageDisplayOther}
-                                        options={IMAGE_DISPLAY_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, imageDisplay: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, imageDisplayOther: value }))}
-                                        helperText="React s'adaptera a carousel, grid, masonry, stacked ou split si possible."
-                                      />
-                                    </Stack>
-                                    {guidedPrompt.galleryImageCount !== "0" ? (
-                                      <Stack spacing={2}>
-                                        <TextField
-                                          fullWidth
-                                          label="Descriptif des visuels de galerie"
-                                          select
-                                          value={guidedPrompt.galleryDescriptionMode}
-                                          onChange={(event) =>
-                                            setGuidedPrompt((prev) => ({
-                                              ...prev,
-                                              galleryDescriptionMode: event.target.value as DescriptionMode,
-                                            }))
-                                          }
-                                        >
-                                          {IMAGE_DESCRIPTION_OPTIONS.map((option) => (
-                                            <MenuItem key={option.value} value={option.value}>
-                                              {option.label}
-                                            </MenuItem>
-                                          ))}
-                                        </TextField>
-                                        {guidedPrompt.galleryDescriptionMode === "custom" ? (
-                                          <TextField
-                                            fullWidth
-                                            helperText="Ex: captures produit, scenes d'usage, details premium, equipe en action..."
-                                            label="Descriptif personnalise de la galerie"
-                                            minRows={3}
-                                            multiline
-                                            value={guidedPrompt.galleryCustomDescription}
-                                            onChange={(event) =>
-                                              setGuidedPrompt((prev) => ({ ...prev, galleryCustomDescription: event.target.value }))
-                                            }
-                                          />
-                                        ) : null}
-                                      </Stack>
-                                    ) : null}
-                                    <Divider />
-                                    <CheckboxSuggestionGroup
-                                      label="Sections principales"
-                                      options={SECTION_OPTIONS}
-                                      values={guidedPrompt.sections}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          sections: toggleInList(prev.sections, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.sectionsOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, sectionsOther: value }))}
-                                      otherLabel="Autres sections"
-                                    />
-                                    <Divider />
-                                    <CheckboxSuggestionGroup
-                                      label="Sections avancees"
-                                      options={ADVANCED_SECTION_OPTIONS}
-                                      values={guidedPrompt.advancedSections}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          advancedSections: toggleInList(prev.advancedSections, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.advancedSectionsOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, advancedSectionsOther: value }))}
-                                      otherLabel="Autres sections avancees"
-                                    />
-                                    <Divider />
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <Box sx={{ flex: 1 }}>
-                                        <CheckboxSuggestionGroup
-                                          label="Sections obligatoires"
-                                          options={SECTION_OPTIONS}
-                                          values={guidedPrompt.requiredSections}
-                                          onToggle={(value) =>
-                                            setGuidedPrompt((prev) => ({
-                                              ...prev,
-                                              requiredSections: toggleInList(prev.requiredSections, value),
-                                            }))
-                                          }
-                                          otherValue={guidedPrompt.requiredSectionsOther}
-                                          onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, requiredSectionsOther: value }))}
-                                          otherLabel="Autres sections obligatoires"
-                                        />
-                                      </Box>
-                                      <Box sx={{ flex: 1 }}>
-                                        <CheckboxSuggestionGroup
-                                          label="Sections interdites"
-                                          options={SECTION_OPTIONS}
-                                          values={guidedPrompt.forbiddenSections}
-                                          onToggle={(value) =>
-                                            setGuidedPrompt((prev) => ({
-                                              ...prev,
-                                              forbiddenSections: toggleInList(prev.forbiddenSections, value),
-                                            }))
-                                          }
-                                          otherValue={guidedPrompt.forbiddenSectionsOther}
-                                          onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, forbiddenSectionsOther: value }))}
-                                          otherLabel="Autres sections interdites"
-                                        />
-                                      </Box>
-                                    </Stack>
-                                  </Stack>
-                                ) : null}
-
-                                {activeStep === 4 ? (
-                                  <Stack spacing={3}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="CTA principal"
-                                        value={guidedPrompt.cta}
-                                        otherValue={guidedPrompt.ctaOther}
-                                        options={CTA_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, cta: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, ctaOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="CTA secondaire"
-                                        value={guidedPrompt.secondaryCta}
-                                        otherValue={guidedPrompt.secondaryCtaOther}
-                                        options={SECONDARY_CTA_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, secondaryCta: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, secondaryCtaOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Objectif du formulaire"
-                                        value={guidedPrompt.formGoal}
-                                        otherValue={guidedPrompt.formGoalOther}
-                                        options={FORM_GOAL_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, formGoal: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, formGoalOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Niveau de friction du formulaire"
-                                        value={guidedPrompt.formFriction}
-                                        otherValue={guidedPrompt.formFrictionOther}
-                                        options={FORM_FRICTION_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, formFriction: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, formFrictionOther: value }))}
-                                      />
-                                    </Stack>
-                                    <CheckboxSuggestionGroup
-                                      label="Champs du formulaire"
-                                      options={FORM_FIELD_OPTIONS}
-                                      values={guidedPrompt.formFields}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          formFields: toggleInList(prev.formFields, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.formFieldsOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, formFieldsOther: value }))}
-                                      otherLabel="Autres champs"
-                                    />
-                                    <Divider />
-                                    <CheckboxSuggestionGroup
-                                      label="Elements de preuve sociale"
-                                      options={PROOF_ELEMENT_OPTIONS}
-                                      values={guidedPrompt.proofElements}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          proofElements: toggleInList(prev.proofElements, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.proofElementsOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, proofElementsOther: value }))}
-                                      otherLabel="Autres elements de preuve"
-                                    />
-                                    <Divider />
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Etape du funnel"
-                                        value={guidedPrompt.funnelStage}
-                                        otherValue={guidedPrompt.funnelStageOther}
-                                        options={FUNNEL_STAGE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, funnelStage: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, funnelStageOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Type d'offre"
-                                        value={guidedPrompt.offerType}
-                                        otherValue={guidedPrompt.offerTypeOther}
-                                        options={OFFER_TYPE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, offerType: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, offerTypeOther: value }))}
-                                      />
-                                    </Stack>
-                                    <SelectWithOtherField
-                                      label="Urgence / rarete"
-                                      value={guidedPrompt.urgency}
-                                      otherValue={guidedPrompt.urgencyOther}
-                                      options={URGENCY_OPTIONS}
-                                      onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, urgency: value }))}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, urgencyOther: value }))}
-                                    />
-                                    <CheckboxSuggestionGroup
-                                      label="Animations"
-                                      options={ANIMATION_OPTIONS}
-                                      values={guidedPrompt.animationTypes}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          animationTypes: toggleInList(prev.animationTypes, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.animationTypesOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, animationTypesOther: value }))}
-                                      otherLabel="Autres animations"
-                                    />
-                                  </Stack>
-                                ) : null}
-
-                                {activeStep === 5 ? (
-                                  <Stack spacing={3}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Langue"
-                                        value={guidedPrompt.language}
-                                        otherValue={guidedPrompt.languageOther}
-                                        options={LANGUAGE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, language: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, languageOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Cible device"
-                                        value={guidedPrompt.targetDevice}
-                                        otherValue={guidedPrompt.targetDeviceOther}
-                                        options={TARGET_DEVICE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, targetDevice: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, targetDeviceOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Densite"
-                                        value={guidedPrompt.density}
-                                        otherValue={guidedPrompt.densityOther}
-                                        options={DENSITY_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, density: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, densityOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Accessibilite"
-                                        value={guidedPrompt.accessibility}
-                                        otherValue={guidedPrompt.accessibilityOther}
-                                        options={ACCESSIBILITY_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, accessibility: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, accessibilityOther: value }))}
-                                      />
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                                      <SelectWithOtherField
-                                        label="Header"
-                                        value={guidedPrompt.headerStyle}
-                                        otherValue={guidedPrompt.headerStyleOther}
-                                        options={HEADER_STYLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, headerStyle: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, headerStyleOther: value }))}
-                                      />
-                                      <SelectWithOtherField
-                                        label="Footer"
-                                        value={guidedPrompt.footerStyle}
-                                        otherValue={guidedPrompt.footerStyleOther}
-                                        options={FOOTER_STYLE_OPTIONS}
-                                        onValueChange={(value) => setGuidedPrompt((prev) => ({ ...prev, footerStyle: value }))}
-                                        onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, footerStyleOther: value }))}
-                                      />
-                                    </Stack>
-                                    <CheckboxSuggestionGroup
-                                      label="Focus specialise"
-                                      options={SPECIALIZED_FOCUS_OPTIONS}
-                                      values={guidedPrompt.specializedFocus}
-                                      onToggle={(value) =>
-                                        setGuidedPrompt((prev) => ({
-                                          ...prev,
-                                          specializedFocus: toggleInList(prev.specializedFocus, value),
-                                        }))
-                                      }
-                                      otherValue={guidedPrompt.specializedFocusOther}
-                                      onOtherChange={(value) => setGuidedPrompt((prev) => ({ ...prev, specializedFocusOther: value }))}
-                                      otherLabel="Autres focus specialises"
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      helperText="Ex: jargon trop technique, trop de sections, style trop corporate, trop de texte..."
-                                      label="Ce qu'il faut absolument eviter"
-                                      minRows={3}
-                                      multiline
-                                      value={guidedPrompt.avoidThings}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, avoidThings: event.target.value }))}
-                                    />
-                                    <TextField
-                                      fullWidth
-                                      helperText="Ex: reference visuelle, contraintes business, angle marketing, infos produit, structure specifique..."
-                                      label="Notes supplementaires"
-                                      minRows={4}
-                                      multiline
-                                      value={guidedPrompt.notes}
-                                      onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, notes: event.target.value }))}
-                                    />
-                                  </Stack>
-                                ) : null}
-                              </Box>
-                            </Fade>
-
-                            <Stack
-                              direction={{ xs: "column", md: "row" }}
-                              justifyContent="space-between"
-                              spacing={2}
-                            >
-                              <Button
-                                disabled={activeStep === 0 || loading}
-                                startIcon={<ChevronLeftRoundedIcon />}
-                                type="button"
-                                variant="text"
-                                sx={{
-                                  borderRadius: 999,
-                                  color: CAPTURIA_COLORS.navySoft,
-                                }}
-                                onClick={handlePreviousStep}
-                              >
-                                Etape precedente
-                              </Button>
-                              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-                                {activeStep < GUIDED_STEPS.length - 1 ? (
-                                  <Button
-                                    disabled={loading}
-                                    endIcon={<ChevronRightRoundedIcon />}
-                                    type="button"
-                                    variant="contained"
-                                    sx={{
-                                      borderRadius: 999,
-                                      px: 3,
-                                      bgcolor: CAPTURIA_COLORS.teal,
-                                      boxShadow: "0 14px 30px rgba(20,184,166,0.24)",
-                                      "&:hover": {
-                                        bgcolor: CAPTURIA_COLORS.tealDark,
-                                      },
-                                    }}
-                                    onClick={handleNextStep}
-                                  >
-                                    Continuer
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    disabled={loading}
-                                    endIcon={
-                                      loading ? <CircularProgress color="inherit" size={18} /> : <RocketLaunchRoundedIcon />
-                                    }
-                                    type="submit"
-                                    variant="contained"
-                                    sx={{
-                                      borderRadius: 999,
-                                      px: 3,
-                                      bgcolor: CAPTURIA_COLORS.teal,
-                                      boxShadow: "0 14px 30px rgba(20,184,166,0.24)",
-                                      "&:hover": {
-                                        bgcolor: CAPTURIA_COLORS.tealDark,
-                                      },
-                                    }}
-                                  >
-                                    {loading ? "Generation..." : "Generer la page"}
-                                  </Button>
-                                )}
-                              </Stack>
-                            </Stack>
-                          </Stack>
-                        </Paper>
-                      </Stack>
-                      <Stack
-                        spacing={2}
-                        sx={{
-                          position: { xl: "sticky" },
-                          top: { xl: 24 },
+              <div className="grid gap-5">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Ce qui se prepare</p>
+                    <div className="flex gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-teal-500 animate-pulse" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse [animation-delay:0.2s]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-slate-400 animate-pulse [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {loadingInsights.slice(0, 6).map((insight, index) => {
+                      const isActive = index === loadingMessageIndex % Math.max(loadingInsights.slice(0, 6).length, 1);
+                      return (
+                      <div
+                        className={cx(
+                          "rounded-2xl border px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-500",
+                          isActive
+                            ? "border-teal-300 bg-teal-50 shadow-[0_12px_30px_rgba(20,184,166,0.16)] -translate-y-0.5"
+                            : "border-slate-200 bg-white",
+                        )}
+                        key={insight}
+                        style={{
+                          animationDelay: `${index * 120}ms`,
                         }}
                       >
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            borderRadius: 5,
-                            border: "1px solid",
-                            borderColor: alpha(CAPTURIA_COLORS.teal, 0.18),
-                            background:
-                              `linear-gradient(180deg, ${CAPTURIA_COLORS.navy} 0%, ${CAPTURIA_COLORS.navySoft} 100%)`,
-                            color: CAPTURIA_COLORS.white,
-                            boxShadow: "0 20px 44px rgba(15,23,42,0.16)",
-                          }}
-                        >
-                          <Stack spacing={2}>
-                            <Typography sx={{ color: "rgba(255,255,255,0.72)" }} variant="overline">
-                              Synthese du brief
-                            </Typography>
-                            <Typography sx={{ fontWeight: 800 }} variant="h6">
-                              {GUIDED_STEPS[activeStep].title}
-                            </Typography>
-                            <Typography sx={{ color: "rgba(255,255,255,0.78)" }} variant="body2">
-                              {GUIDED_STEPS[activeStep].description}
-                            </Typography>
-                            <LinearProgress
-                              sx={{
-                                height: 8,
-                                borderRadius: 999,
-                                bgcolor: "rgba(255,255,255,0.12)",
-                                "& .MuiLinearProgress-bar": {
-                                  borderRadius: 999,
-                                  bgcolor: CAPTURIA_COLORS.teal,
-                                },
-                              }}
-                              value={completionRatio}
-                              variant="determinate"
-                            />
-                            <Stack direction="row" justifyContent="space-between">
-                              <Typography sx={{ color: "rgba(255,255,255,0.72)" }} variant="body2">
-                                Progression
-                              </Typography>
-                              <Typography sx={{ fontWeight: 700 }} variant="body2">
-                                {Math.round(completionRatio)}%
-                              </Typography>
-                            </Stack>
-                          </Stack>
-                        </Paper>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={cx(
+                              "h-2.5 w-2.5 rounded-full transition-all",
+                              isActive ? "bg-teal-500 shadow-[0_0_12px_rgba(20,184,166,0.6)]" : "bg-slate-300",
+                            )}
+                          />
+                          <span>{insight}</span>
+                        </div>
+                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            borderRadius: 5,
-                            border: "1px solid",
-                            borderColor: CAPTURIA_COLORS.border,
-                            bgcolor: CAPTURIA_COLORS.white,
-                            boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
-                          }}
-                        >
-                          <Stack spacing={1.5}>
-                            <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="subtitle1">
-                              Sections retenues
-                            </Typography>
-                            <Stack direction="row" flexWrap="wrap" gap={1}>
-                              {selectedSections.map((section) => (
-                                <Chip
-                                  key={section}
-                                  label={section}
-                                  size="small"
-                                  sx={{
-                                    borderColor: alpha(CAPTURIA_COLORS.teal, 0.18),
-                                    bgcolor: alpha(CAPTURIA_COLORS.teal, 0.06),
-                                    color: CAPTURIA_COLORS.navySoft,
-                                  }}
-                                  variant="outlined"
-                                />
-                              ))}
-                            </Stack>
-                          </Stack>
-                        </Paper>
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Apercu en cours</p>
+                      <p className="mt-1 text-sm text-slate-600">La page prend forme pendant la creation.</p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+                      En direct
+                    </span>
+                  </div>
+                  <LoadingPreviewSkeleton form={guidedPrompt} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            borderRadius: 5,
-                            border: "1px solid",
-                            borderColor: CAPTURIA_COLORS.border,
-                            bgcolor: CAPTURIA_COLORS.white,
-                            boxShadow: "0 16px 34px rgba(15,23,42,0.05)",
-                          }}
-                        >
-                          <Stack spacing={1.5}>
-                            <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="subtitle1">
-                              Apercus responsive
-                            </Typography>
-                            <Stack spacing={2}>
-                              <Box>
-                                <Typography sx={{ color: CAPTURIA_COLORS.textMuted, mb: 1 }} variant="body2">
-                                  Mobile
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    mx: "auto",
-                                    width: { xs: 238, sm: 250 },
-                                    borderRadius: `${previewTheme.cornerRadius * 5}px`,
-                                    p: 1.1,
-                                    bgcolor: "#0f172a",
-                                    boxShadow: "0 28px 54px rgba(15,23,42,0.24)",
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      width: "100%",
-                                      borderRadius: `${previewTheme.cornerRadius * 4}px`,
-                                      overflow: "hidden",
-                                      bgcolor: "#111827",
-                                      border: "1px solid rgba(255,255,255,0.08)",
-                                    }}
-                                  >
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        px: 1.3,
-                                        py: 0.9,
-                                        color: "rgba(255,255,255,0.82)",
-                                        fontSize: 11,
-                                        fontWeight: 700,
-                                      }}
-                                    >
-                                      <Box>9:41</Box>
-                                      <Box
-                                        sx={{
-                                          width: 70,
-                                          height: 6,
-                                          borderRadius: `${previewTheme.pillRadius}px`,
-                                          bgcolor: "rgba(255,255,255,0.16)",
-                                        }}
-                                      />
-                                      <Box>5G</Box>
-                                    </Box>
-                                    <Box
-                                      sx={{
-                                        p: 0.85,
-                                        maxHeight: 500,
-                                        overflow: "auto",
-                                        bgcolor: previewTheme.surface,
-                                      }}
-                                    >
-                                      <PageSkeletonPreview
-                                        sections={previewSections}
-                                        theme={previewTheme}
-                                        viewport="mobile"
-                                        websiteName={guidedPrompt.websiteName}
-                                      />
-                                    </Box>
-                                  </Box>
-                                </Box>
-                              </Box>
-
-                            </Stack>
-                          </Stack>
-                        </Paper>
-                      </Stack>
-                    </Box>
-                  </Stack>
-                )}
-
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  {mode === "free" ? (
-                    <Button
-                      disabled={loading}
-                      size="large"
-                      type="submit"
-                      variant="contained"
-                      sx={{
-                        borderRadius: 999,
-                        px: 3,
-                        bgcolor: CAPTURIA_COLORS.teal,
-                        boxShadow: "0 14px 30px rgba(20,184,166,0.24)",
-                        "&:hover": {
-                          bgcolor: CAPTURIA_COLORS.tealDark,
-                        },
-                      }}
-                    >
-                      {loading ? <CircularProgress color="inherit" size={20} /> : "Generer et sauvegarder"}
-                    </Button>
-                  ) : null}
-                  <Button
-                    href="/"
-                    size="large"
-                    type="button"
-                    variant="text"
-                    sx={{
-                      borderRadius: 999,
-                      color: CAPTURIA_COLORS.navy,
-                    }}
-                  >
-                    Voir le resultat
-                  </Button>
-                  <Button
-                    disabled={loading}
-                    size="large"
-                    type="button"
-                    variant="outlined"
-                    sx={{
-                      borderRadius: 999,
-                      borderColor: CAPTURIA_COLORS.border,
-                      color: CAPTURIA_COLORS.navySoft,
-                    }}
-                    onClick={handleReset}
-                  >
-                    Reinitialiser
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
-          </Paper>
-
-          {error ? (
-            <Alert
-              severity="error"
-              sx={{
-                borderRadius: 4,
-                border: "1px solid rgba(239,68,68,0.18)",
-              }}
-            >
-              {error}
-            </Alert>
-          ) : null}
-          {successMessage ? (
-            <Alert
-              severity="success"
-              sx={{
-                borderRadius: 4,
-                border: "1px solid rgba(34,197,94,0.18)",
-              }}
-            >
-              {successMessage}
-            </Alert>
-          ) : null}
-
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: 6,
-              border: "1px solid",
-              borderColor: CAPTURIA_COLORS.border,
-              bgcolor: CAPTURIA_COLORS.white,
-              boxShadow: "0 18px 44px rgba(15,23,42,0.06)",
-            }}
-          >
-            <Stack spacing={2.5}>
-              <Stack
-                alignItems={{ xs: "flex-start", md: "center" }}
-                direction={{ xs: "column", md: "row" }}
-                justifyContent="space-between"
-                spacing={2}
-              >
-                <Box>
-                  <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="h4">
-                    Apercu live de la page
-                  </Typography>
-                  <Typography sx={{ color: CAPTURIA_COLORS.textMuted, maxWidth: 760 }}>
-                    Cette maquette squelette evolue selon les sections, les visuels et le style
-                    choisis. Elle aide l'utilisateur a visualiser la page avant generation.
-                  </Typography>
-                </Box>
-                <Chip
-                  label={`${previewSections.length} blocs affiches`}
-                  sx={{
-                    borderColor: alpha(previewTheme.accent, 0.18),
-                    bgcolor: alpha(previewTheme.accent, 0.08),
-                    color: CAPTURIA_COLORS.navySoft,
-                    fontWeight: 700,
-                  }}
-                  variant="outlined"
-                />
-              </Stack>
-
-              <Box
-                sx={{
-                  borderRadius: 5,
-                  bgcolor: "#0f172a",
-                  p: 1.1,
-                  boxShadow: "0 28px 60px rgba(15,23,42,0.16)",
-                }}
-              >
-                <Stack
-                  alignItems="center"
-                  direction="row"
-                  justifyContent="space-between"
-                  sx={{
-                    px: 1,
-                    py: 0.8,
-                  }}
+      {showCompletionModal ? (
+        <div className="fixed inset-0 z-[85] bg-slate-950/50 backdrop-blur-[6px]">
+          <div className="mx-auto flex min-h-screen w-[min(680px,calc(100%-24px))] items-center justify-center py-8">
+            <div className="w-full rounded-[32px] border border-white/20 bg-white p-8 shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
+                OK
+              </div>
+              <div className="mt-6 text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-emerald-700">Creation terminee</p>
+                <h2 className="mt-2 text-3xl font-black tracking-[-0.03em] text-slate-950">Ta page est prete</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Ta page est prete. Tu peux maintenant l'ouvrir dans un nouvel onglet.
+                </p>
+              </div>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700"
+                  onClick={() => setShowCompletionModal(false)}
+                  type="button"
                 >
-                  <Stack direction="row" spacing={0.75}>
-                    {["#fb7185", "#f59e0b", "#22c55e"].map((dot) => (
-                      <Box
-                        key={dot}
-                        sx={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 999,
-                          bgcolor: dot,
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                  <Box
-                    sx={{
-                      px: 2,
-                      py: 0.65,
-                      borderRadius: 999,
-                      bgcolor: "rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.72)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Desktop preview
-                  </Box>
-                  <Box sx={{ width: 56 }} />
-                </Stack>
-
-                <Box
-                  sx={{
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    bgcolor: previewTheme.surface,
+                  Plus tard
+                </button>
+                <button
+                  className="rounded-full border border-teal-500 bg-teal-500 px-5 py-3 text-sm font-semibold text-white"
+                  onClick={() => {
+                    window.open("/", "_blank", "noopener,noreferrer");
+                    setShowCompletionModal(false);
                   }}
+                  type="button"
                 >
-                  <Box
-                    sx={{
-                      maxHeight: 720,
-                      overflow: "auto",
-                      p: { xs: 1.25, md: 1.5 },
-                    }}
-                  >
-                    <PageSkeletonPreview
-                      sections={previewSections}
-                      theme={previewTheme}
-                      viewport="desktop"
-                      websiteName={guidedPrompt.websiteName}
+                  Aller a votre page
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={cx(
+          "mx-auto flex flex-col gap-6",
+          modeSelected && mode === "guided"
+            ? "w-[min(1380px,calc(100%-32px))] 2xl:w-[min(1320px,calc(100%-700px))]"
+            : "w-[min(1320px,calc(100%-32px))]",
+        )}
+      >
+        {!modeSelected ? (
+          <div className="grid min-h-[70vh] place-items-center">
+            <div className="w-full max-w-3xl rounded-[32px] border border-slate-200 bg-white/90 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+              <div className="mx-auto max-w-2xl text-center">
+                <h1 className="text-4xl font-black tracking-[-0.04em] text-slate-900">Choisis ton mode</h1>
+                    <p className="mt-3 text-slate-500">Commence par choisir la facon dont tu veux preparer ta page.</p>
+              </div>
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                <button
+                  className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
+                  onClick={() => {
+                    setMode("guided");
+                    setModeSelected(true);
+                  }}
+                  type="button"
+                >
+                  <p className="text-lg font-bold text-slate-900">Mode guide</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Parcours etape par etape avec structure, design, sections, langues et images.
+                  </p>
+                </button>
+                <button
+                  className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
+                  onClick={() => {
+                    setMode("free");
+                    setModeSelected(true);
+                  }}
+                  type="button"
+                >
+                  <p className="text-lg font-bold text-slate-900">Description libre</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Ecris librement ce que tu veux obtenir avec tes envies et tes contraintes.
+                  </p>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {mode === "guided" ? (
+              <div className="fixed inset-x-3 bottom-3 z-50 2xl:inset-x-auto 2xl:bottom-6 2xl:right-6 2xl:w-[300px]">
+                <div className="rounded-[24px] border border-slate-200 bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Progression</p>
+                      <p className="mt-1 text-sm font-bold text-slate-900">
+                        Etape {activeStep + 1}/{GUIDED_STEPS.length}: {currentStepMeta.title}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-700">
+                      {progressPercent}%
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-teal-500 transition-all"
+                      style={{ width: `${progressPercent}%` }}
                     />
-                  </Box>
-                </Box>
-              </Box>
-            </Stack>
-          </Paper>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <button
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700"
+                      onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
+                      type="button"
+                    >
+                      Precedent
+                    </button>
+                    <div className="text-center text-xs text-slate-500">
+                      {completedStepsCount}/{GUIDED_STEPS.length} etapes demarrees
+                    </div>
+                    <button
+                      className="rounded-full border border-slate-900 bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                      onClick={() => setActiveStep((prev) => Math.min(prev + 1, GUIDED_STEPS.length - 1))}
+                      type="button"
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: 6,
-              border: "1px solid",
-              borderColor: CAPTURIA_COLORS.border,
-              bgcolor: CAPTURIA_COLORS.white,
-              boxShadow: "0 16px 40px rgba(15,23,42,0.05)",
-            }}
-          >
-            <Stack spacing={2}>
-              <Typography sx={{ color: CAPTURIA_COLORS.navy, fontWeight: 800 }} variant="h4">
-                JSON genere
-              </Typography>
-              <Typography sx={{ color: CAPTURIA_COLORS.textMuted }}>
-                Apercu du dernier JSON retourne puis ecrit dans <code>data/page.json</code>.
-              </Typography>
-              <Box
-                component="pre"
-                sx={{
-                  overflowX: "auto",
-                  m: 0,
-                  p: 3,
-                  borderRadius: 4,
-                  bgcolor: CAPTURIA_COLORS.surface,
-                  border: "1px solid",
-                  borderColor: CAPTURIA_COLORS.border,
-                  fontSize: 13,
-                  color: CAPTURIA_COLORS.navySoft,
-                }}
-              >
-                {generatedJson || "{\n  \"status\": \"Aucune generation pour le moment\"\n}"}
-              </Box>
-            </Stack>
-          </Paper>
-        </Stack>
-      </Container>
-    </Box>
+            <div className="sticky top-4 z-40 flex justify-end">
+              <div className="flex gap-3 rounded-full border border-slate-200 bg-white/90 p-2 shadow-sm backdrop-blur">
+                <button
+                  className={cx(
+                    "rounded-full border px-4 py-2 text-sm font-semibold",
+                    mode === "guided" ? "border-teal-500 bg-teal-500 text-white" : "border-slate-200 bg-white text-slate-700",
+                  )}
+                  onClick={() => setMode("guided")}
+                  type="button"
+                >
+                  Mode guide
+                </button>
+                <button
+                  className={cx(
+                    "rounded-full border px-4 py-2 text-sm font-semibold",
+                    mode === "free" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700",
+                  )}
+                  onClick={() => setMode("free")}
+                  type="button"
+                >
+                  Description libre
+                </button>
+              </div>
+            </div>
+            <form className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]" onSubmit={handleSubmit}>
+              <div className="grid gap-6 self-start">
+            {mode === "guided" ? (
+              <>
+                <div className="sticky top-[84px] z-30 grid gap-3 rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                        {draftSaveState === "saved" ? "Brouillon enregistre" : "En cours"}
+                      </span>
+                      <p className="text-sm text-slate-500">
+                        Progression de creation: <span className="font-semibold text-slate-900">{progressPercent}%</span>
+                        <span className="ml-2 text-slate-400">({completedStepsCount}/{GUIDED_STEPS.length} etapes demarrees)</span>
+                      </p>
+                    </div>
+                    <button
+                      className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white"
+                      onClick={() => {
+                        window.localStorage.removeItem(PROMPT_DRAFT_STORAGE_KEY);
+                        setGuidedPrompt(DEFAULT_GUIDED_STATE);
+                        setPrompt(DEFAULT_PROMPT);
+                        setActiveStep(0);
+                        setMode("guided");
+                        setModeSelected(true);
+                        setSuccessMessage(null);
+                        setError(null);
+                      }}
+                      type="button"
+                    >
+                      Reinitialiser le brouillon
+                    </button>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-teal-500 transition-all"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                    {GUIDED_STEPS.map((step, index) => (
+                      <button className="shrink-0" key={step.id} onClick={() => setActiveStep(index)} type="button">
+                        <StepBadge active={activeStep === index} done={stepCompletion[index]} label={step.title} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="mb-6 rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">
+                          Etape {activeStep + 1} sur {GUIDED_STEPS.length}
+                        </p>
+                        <h2 className="mt-1 text-2xl font-bold text-slate-900">{currentStepMeta.title}</h2>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-slate-700 shadow-sm">
+                        {currentStepDoneCount}/{currentStepChecklist.length} points
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">{STEP_HELP[currentStepMeta.id].description}</p>
+                  </div>
+
+                  {activeStep === 0 ? (
+                    <div className="grid gap-6">
+                      <div className="rounded-[28px] border border-teal-100 bg-teal-50/70 p-5">
+                        <p className="text-sm font-semibold uppercase tracking-[0.12em] text-teal-700">Commencer simplement</p>
+                        <p className="mt-2 text-lg font-bold text-slate-900">
+                          Tu n&apos;as pas besoin de tout connaitre pour creer une bonne landing page.
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          Commence juste par decrire ton activite en une phrase. Le reste peut rester sur les valeurs conseillees, puis tu ajusteras ensuite.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          {STARTER_PRESETS.map((preset) => (
+                            <button
+                              className="rounded-2xl border border-teal-200 bg-white px-4 py-3 text-left transition hover:border-teal-400"
+                              key={preset.key}
+                              onClick={() => applyStarterPreset(preset)}
+                              type="button"
+                            >
+                              <p className="text-sm font-semibold text-slate-900">{preset.title}</p>
+                              <p className="mt-1 text-xs text-slate-500">{preset.description}</p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Nom du site</span>
+                        <input
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, websiteName: event.target.value }))}
+                          placeholder="Ex: NovaFlow, PulseFit, Studio Hana..."
+                          value={guidedPrompt.websiteName}
+                        />
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Produit</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, product: event.target.value }))}
+                          value={guidedPrompt.product}
+                        >
+                          {PRODUCT_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Descriptif de l&apos;activite</span>
+                        <textarea
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, businessDescription: event.target.value }))}
+                          placeholder="Explique simplement ce que tu proposes, pour qui, et pourquoi c'est utile."
+                          rows={4}
+                          value={guidedPrompt.businessDescription}
+                        />
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Type de page</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, pageType: event.target.value }))}
+                          value={guidedPrompt.pageType}
+                        >
+                          {PAGE_TYPE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Objectif</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, goal: event.target.value }))}
+                          value={guidedPrompt.goal}
+                        >
+                          {GOAL_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {activeStep === 1 ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Audience</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, audience: event.target.value }))}
+                          value={guidedPrompt.audience}
+                        >
+                          {AUDIENCE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Langue principale</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) =>
+                            setGuidedPrompt((prev) => {
+                              const nextLocale = event.target.value;
+                              const supportedLocales = parseSupportedLocales(prev.supportedLanguages, nextLocale);
+
+                              return {
+                                ...prev,
+                                displayLanguage: nextLocale,
+                                supportedLanguages: supportedLocales.includes(normalizeLocaleToken(nextLocale))
+                                  ? supportedLocales.join(", ")
+                                  : [normalizeLocaleToken(nextLocale), ...supportedLocales].join(", "),
+                              };
+                            })
+                          }
+                          value={guidedPrompt.displayLanguage}
+                        >
+                          {LANGUAGE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Ton</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, tone: event.target.value }))}
+                          value={guidedPrompt.tone}
+                        >
+                          {TONE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Sens de lecture</span>
+                        <select
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) =>
+                            setGuidedPrompt((prev) => ({ ...prev, directionMode: event.target.value as DirectionMode }))
+                          }
+                          value={guidedPrompt.directionMode}
+                        >
+                          <option value="auto">Automatique selon la langue</option>
+                          <option value="ltr">Gauche vers droite</option>
+                          <option value="rtl">Droite vers gauche</option>
+                        </select>
+                      </label>
+                      <label className="grid gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Plusieurs langues</span>
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            className={cx(
+                              "rounded-full border px-4 py-2 text-sm font-semibold",
+                              !guidedPrompt.multilingualMode
+                                ? "border-slate-900 bg-slate-900 text-white"
+                                : "border-slate-200 bg-white text-slate-700",
+                            )}
+                            onClick={() =>
+                              setGuidedPrompt((prev) => ({
+                                ...prev,
+                                multilingualMode: false,
+                                supportedLanguages: prev.displayLanguage,
+                                translationContext: "",
+                              }))
+                            }
+                            type="button"
+                          >
+                            Une seule langue
+                          </button>
+                          <button
+                            className={cx(
+                              "rounded-full border px-4 py-2 text-sm font-semibold",
+                              guidedPrompt.multilingualMode
+                                ? "border-teal-500 bg-teal-500 text-white"
+                                : "border-slate-200 bg-white text-slate-700",
+                            )}
+                            onClick={() =>
+                              setGuidedPrompt((prev) => ({
+                                ...prev,
+                                multilingualMode: true,
+                                supportedLanguages:
+                                  prev.supportedLanguages.trim().length > 0
+                                    ? prev.supportedLanguages
+                                    : `${prev.displayLanguage}, en`,
+                              }))
+                            }
+                            type="button"
+                          >
+                            Multi-langue
+                          </button>
+                        </div>
+                      </label>
+                      {guidedPrompt.multilingualMode ? (
+                        <>
+                          <label className="grid gap-2 md:col-span-2">
+                            <span className="text-sm font-semibold text-slate-700">Langues a proposer</span>
+                            <input
+                              className="rounded-2xl border border-slate-200 px-4 py-3"
+                              onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, supportedLanguages: event.target.value }))}
+                              placeholder="fr, en, ar"
+                              value={guidedPrompt.supportedLanguages}
+                            />
+                          </label>
+                          <label className="grid gap-2 md:col-span-2">
+                            <span className="text-sm font-semibold text-slate-700">Consignes pour les langues</span>
+                            <textarea
+                              className="rounded-2xl border border-slate-200 px-4 py-3"
+                              onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, translationContext: event.target.value }))}
+                              placeholder="Ex: garder un ton premium, rester simple, utiliser des boutons courts."
+                              rows={3}
+                              value={guidedPrompt.translationContext}
+                            />
+                          </label>
+                        </>
+                      ) : null}
+                      <label className="grid gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Bouton principal</span>
+                        <input
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, cta: event.target.value }))}
+                          value={guidedPrompt.cta}
+                        />
+                      </label>
+                      <label className="grid gap-2 md:col-span-2">
+                        <span className="text-sm font-semibold text-slate-700">Notes</span>
+                        <textarea
+                          className="rounded-2xl border border-slate-200 px-4 py-3"
+                          onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, notes: event.target.value }))}
+                          rows={4}
+                          value={guidedPrompt.notes}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+
+                  {activeStep === 2 ? (
+                    <div className="grid gap-6">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Style</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, style: event.target.value }))} value={guidedPrompt.style}>
+                            {STYLE_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Style UI</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, uiStyle: event.target.value }))} value={guidedPrompt.uiStyle}>
+                            {UI_STYLE_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Coins</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, cornerStyle: event.target.value }))} value={guidedPrompt.cornerStyle}>
+                            {CORNER_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Gradients</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, gradientMode: event.target.value as GradientMode }))} value={guidedPrompt.gradientMode}>
+                            <option value="model">Laisser choisir</option>
+                            <option value="with">Avec gradients</option>
+                            <option value="without">Sans gradient</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="grid gap-4 rounded-[28px] border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2">
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Style du menu du haut</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                            onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, headerVariant: event.target.value }))}
+                            value={guidedPrompt.headerVariant}
+                          >
+                            {HEADER_VARIANT_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Position du menu du haut</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                            onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, headerSticky: event.target.value }))}
+                            value={guidedPrompt.headerSticky}
+                          >
+                            {HEADER_STICKY_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Fond du menu du haut</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                            onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, headerTransparency: event.target.value }))}
+                            value={guidedPrompt.headerTransparency}
+                          >
+                            {HEADER_TRANSPARENCY_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Comportement au scroll</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                            onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, headerScrollBehavior: event.target.value }))}
+                            value={guidedPrompt.headerScrollBehavior}
+                          >
+                            {HEADER_SCROLL_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="grid gap-3">
+                        <p className="text-sm font-semibold text-slate-700">Choix des couleurs</p>
+                        <div className="flex flex-wrap gap-3">
+                          {[
+                            { value: "model", label: "Laisser le modele choisir" },
+                            { value: "palette", label: "Choisir une ambiance couleur" },
+                            { value: "custom", label: "Choisir mes couleurs" },
+                          ].map((option) => (
+                            <button
+                              className={cx(
+                                "rounded-full border px-4 py-2 text-sm font-semibold",
+                                guidedPrompt.colorMode === option.value
+                                  ? "border-teal-500 bg-teal-500 text-white"
+                                  : "border-slate-200 bg-white text-slate-700",
+                              )}
+                              key={option.value}
+                              onClick={() => setGuidedPrompt((prev) => ({ ...prev, colorMode: option.value as ColorMode }))}
+                              type="button"
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {guidedPrompt.colorMode === "palette" ? (
+                        <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-3">
+                          <div className="max-h-[560px] overflow-y-auto pr-1">
+                            <div className="grid gap-6">
+                              {paletteGroups.map((group) => (
+                                <div className="grid gap-3" key={group.category}>
+                                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                    <div>
+                                      <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-700">
+                                        {getPaletteCategoryLabel(group.category)}
+                                      </p>
+                                      <p className="text-sm text-slate-500">{group.description}</p>
+                                    </div>
+                                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                                      {group.palettes.length} propositions
+                                    </span>
+                                  </div>
+                                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                    {group.palettes.map((palette) => (
+                                      <PaletteCard
+                                        key={palette.value}
+                                        onClick={() => setGuidedPrompt((prev) => ({ ...prev, palette: palette.value }))}
+                                        palette={palette}
+                                        selected={guidedPrompt.palette === palette.value}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="mt-3 text-xs text-slate-500">
+                            Si tu coches `gallery`, des images sont maintenant generees automatiquement par defaut.
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {guidedPrompt.colorMode === "custom" ? (
+                        <div className="grid gap-4 md:grid-cols-5">
+                          {[
+                            ["Primaire", "customPrimary"],
+                            ["Secondaire", "customSecondary"],
+                            ["Accent", "customAccent"],
+                            ["Fond", "customBackground"],
+                            ["Texte", "customText"],
+                          ].map(([label, key]) => (
+                            <label className="grid gap-2" key={key}>
+                              <span className="text-sm font-semibold text-slate-700">{label}</span>
+                              <input
+                                className="h-12 w-full rounded-2xl border border-slate-200"
+                                onChange={(event) =>
+                                  setGuidedPrompt((prev) => ({ ...prev, [key]: event.target.value }))
+                                }
+                                type="color"
+                                value={guidedPrompt[key as keyof GuidedPromptState] as string}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {activeStep === 3 ? (
+                    <div className="grid gap-6">
+                      <div className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Niveau UX</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                            onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, uxLevel: event.target.value }))}
+                            value={guidedPrompt.uxLevel}
+                          >
+                            {UX_LEVEL_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-4">
+                          <p className="text-sm font-semibold text-slate-700">Intentions UX</p>
+                          <p className="mt-2 text-sm text-slate-500">
+                            Choisis les optimisations d&apos;experience que le modele doit privilegier dans la page.
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                              {guidedPrompt.uxOptions.length} options actives
+                            </span>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                              Niveau {guidedPrompt.uxLevel.toLowerCase()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(["Engagement", "Fluidite"] as const).map((category) => (
+                        <div className="grid gap-3" key={category}>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-700">{category}</p>
+                            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                              {UX_OPTIONS.filter((option) => option.category === category).length} options
+                            </span>
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {UX_OPTIONS.filter((option) => option.category === category).map((option) => {
+                              const active = guidedPrompt.uxOptions.includes(option.value);
+                              return (
+                                <button
+                                  className={cx(
+                                    "rounded-[24px] border p-4 text-left transition",
+                                    active
+                                      ? "border-teal-500 bg-teal-50 shadow-sm"
+                                      : "border-slate-200 bg-white hover:border-slate-300",
+                                  )}
+                                  key={option.value}
+                                  onClick={() => toggleUxOption(option.value)}
+                                  type="button"
+                                >
+                                  <p className="text-sm font-semibold text-slate-900">{option.label}</p>
+                                  <p className="mt-2 text-sm leading-6 text-slate-500">{option.description}</p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {activeStep === 4 ? (
+                    <div className="grid gap-6">
+                      <div className="grid gap-3">
+                        <p className="text-sm font-semibold text-slate-700">Blocs a afficher</p>
+                        <div className="flex flex-wrap gap-3">
+                          {SECTION_OPTIONS.map((section) => {
+                            const active = guidedPrompt.sections.includes(section);
+                            return (
+                              <button
+                                className={cx(
+                                  "rounded-full border px-4 py-2 text-sm font-semibold",
+                                  active ? "border-teal-500 bg-teal-500 text-white" : "border-slate-200 bg-white text-slate-700",
+                                )}
+                                key={section}
+                              onClick={() => toggleSection(section)}
+                                type="button"
+                              >
+                                {getSectionDisplayLabel(section)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Image hero</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, heroImageMode: event.target.value as GuidedPromptState["heroImageMode"] }))} value={guidedPrompt.heroImageMode}>
+                            <option value="none">Pas d&apos;image</option>
+                            <option value="context">Selon le contexte</option>
+                            <option value="custom">Description custom</option>
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Images galerie</span>
+                          <select
+                            className="rounded-2xl border border-slate-200 px-4 py-3"
+                            onChange={(event) =>
+                              setGuidedPrompt((prev) => {
+                                const nextValue = event.target.value;
+                                const hasGallerySection = prev.sections.includes("gallery");
+
+                                return {
+                                  ...prev,
+                                  galleryImageCount: nextValue,
+                                  sections:
+                                    nextValue === "0"
+                                      ? prev.sections.filter((item) => item !== "gallery")
+                                      : hasGallerySection
+                                        ? prev.sections
+                                        : [...prev.sections, "gallery"],
+                                  imageDisplay:
+                                    nextValue !== "0" && prev.imageDisplay === "auto"
+                                      ? "grid"
+                                      : prev.imageDisplay,
+                                  galleryDescriptionMode:
+                                    nextValue === "0" ? "context" : prev.galleryDescriptionMode,
+                                };
+                              })
+                            }
+                            value={guidedPrompt.galleryImageCount}
+                          >
+                            {["0", "1", "2", "3", "4", "5", "6"].map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Disposition des images</span>
+                          <select className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, imageDisplay: event.target.value }))} value={guidedPrompt.imageDisplay}>
+                            {IMAGE_DISPLAY_OPTIONS.map((option) => (
+                              <option key={option} value={option}>
+                                {getImageDisplayLabel(option)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      {guidedPrompt.heroImageMode === "custom" ? (
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Description de l'image d'ouverture</span>
+                          <textarea className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, heroImageCustomDescription: event.target.value }))} rows={3} value={guidedPrompt.heroImageCustomDescription} />
+                        </label>
+                      ) : null}
+
+                      {guidedPrompt.galleryImageCount !== "0" ? (
+                        <label className="grid gap-2">
+                          <span className="text-sm font-semibold text-slate-700">Description galerie</span>
+                          <textarea className="rounded-2xl border border-slate-200 px-4 py-3" onChange={(event) => setGuidedPrompt((prev) => ({ ...prev, galleryCustomDescription: event.target.value, galleryDescriptionMode: "custom" }))} rows={3} value={guidedPrompt.galleryCustomDescription} />
+                        </label>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex gap-3">
+                    <button
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                      onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
+                      type="button"
+                    >
+                      Precedent
+                    </button>
+                    <button
+                      className="rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                      onClick={() => setActiveStep((prev) => Math.min(prev + 1, GUIDED_STEPS.length - 1))}
+                      type="button"
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                  <button
+                    className="rounded-full border border-teal-500 bg-teal-500 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                    disabled={loading}
+                    type="submit"
+                  >
+                    {loading ? "Creation en cours..." : "Creer la page"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+                <label className="grid gap-3">
+                  <span className="text-sm font-semibold text-slate-700">Decris ta page librement</span>
+                  <p className="text-sm text-slate-500">
+                    Explique simplement ce que tu veux. Par exemple : `tous les textes en arabe`,
+                    `page entierement en anglais`, `lecture de droite a gauche`, `page en francais, arabe et anglais`.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {FREE_PROMPT_SUGGESTIONS.map((suggestion) => (
+                      <button
+                        className={cx(
+                          "rounded-full border px-3 py-2 text-sm font-semibold transition",
+                          suggestion.key === "multilingual"
+                            ? "border-teal-500 bg-teal-500 text-white"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white",
+                        )}
+                        key={suggestion.key}
+                        onClick={() => setPrompt(suggestion.prompt)}
+                        type="button"
+                      >
+                        {suggestion.key === "multilingual" ? "Multi-langue" : suggestion.title}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    className="min-h-[320px] rounded-3xl border border-slate-200 px-5 py-4 text-sm text-slate-800"
+                    onChange={(event) => setPrompt(event.target.value)}
+                    value={prompt}
+                  />
+                </label>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  {FREE_PROMPT_SUGGESTIONS.map((suggestion) => (
+                    <button
+                      className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
+                      key={suggestion.key}
+                      onClick={() => setPrompt(suggestion.prompt)}
+                      type="button"
+                    >
+                      <p className="text-sm font-semibold text-slate-900">{suggestion.title}</p>
+                      <p className="mt-2 line-clamp-4 text-sm text-slate-500">{suggestion.prompt}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    className="rounded-full border border-slate-900 bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                    disabled={loading}
+                    type="submit"
+                  >
+                    {loading ? "Creation en cours..." : "Creer la page"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-6 self-start xl:sticky xl:top-6 2xl:pt-[360px]">
+            {mode === "guided" ? (
+              <div className="grid gap-4">
+                {isFreshGuidedStart ? (
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
+                    <p className="text-sm font-semibold uppercase tracking-[0.12em] text-amber-800">Bienvenue</p>
+                    <p className="mt-2 text-lg font-bold text-slate-900">On construit ta page pas a pas.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Commence par l&apos;etape `Projet`. Tu peux juste ecrire une phrase sur ton activite et garder le reste
+                      pour plus tard.
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm 2xl:hidden">
+                  <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Assistant</p>
+                  <p className="mt-2 text-lg font-bold text-slate-900">{currentStepMeta.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{STEP_HELP[currentStepMeta.id].description}</p>
+                  <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-4">
+                    <p className="text-sm font-semibold text-teal-800">Ce que tu dois faire maintenant</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{STEP_HELP[currentStepMeta.id].action}</p>
+                    <p className="mt-3 text-xs leading-5 text-slate-500">{STEP_HELP[currentStepMeta.id].example}</p>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-900">{STEP_HELP[currentStepMeta.id].title}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      Remplis cette etape pour guider la generation et obtenir un resultat plus coherent des le premier essai.
+                    </p>
+                    <div className="mt-4 grid gap-2">
+                      {currentStepChecklist.map((item) => (
+                        <div
+                          className={cx(
+                            "flex items-center justify-between rounded-2xl border px-3 py-2",
+                            item.done ? "border-emerald-200 bg-emerald-50/70" : "border-slate-200 bg-white",
+                          )}
+                          key={item.label}
+                        >
+                          <span className="text-sm text-slate-700">{item.label}</span>
+                          <span
+                            className={cx(
+                              "text-xs font-semibold uppercase tracking-[0.12em]",
+                              item.done ? "text-emerald-700" : "text-slate-400",
+                            )}
+                          >
+                            {item.done ? "OK" : "A faire"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      {currentStepDoneCount}/{currentStepChecklist.length} points avances dans cette etape
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {mode === "guided" ? (
+              <div className="2xl:hidden">
+                <PreviewFrame title="Apercu">
+                  <SkeletonPreview form={guidedPrompt} />
+                </PreviewFrame>
+              </div>
+            ) : null}
+
+            {mode === "guided" ? (
+              <div className="pointer-events-none fixed bottom-6 left-6 z-40 hidden w-[300px] 2xl:block">
+                <div className="pointer-events-auto rounded-[28px] border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur">
+                  <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-500">Assistant</p>
+                  <p className="mt-2 text-lg font-bold text-slate-900">{currentStepMeta.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{STEP_HELP[currentStepMeta.id].description}</p>
+                  <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-4">
+                    <p className="text-sm font-semibold text-teal-800">Ce que tu dois faire maintenant</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{STEP_HELP[currentStepMeta.id].action}</p>
+                    <p className="mt-3 text-xs leading-5 text-slate-500">{STEP_HELP[currentStepMeta.id].example}</p>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-900">{STEP_HELP[currentStepMeta.id].title}</p>
+                    <div className="mt-4 grid gap-2">
+                      {currentStepChecklist.map((item) => (
+                        <div
+                          className={cx(
+                            "flex items-center justify-between rounded-2xl border px-3 py-2",
+                            item.done ? "border-emerald-200 bg-emerald-50/70" : "border-slate-200 bg-white",
+                          )}
+                          key={item.label}
+                        >
+                          <span className="text-sm text-slate-700">{item.label}</span>
+                          <span
+                            className={cx(
+                              "text-xs font-semibold uppercase tracking-[0.12em]",
+                              item.done ? "text-emerald-700" : "text-slate-400",
+                            )}
+                          >
+                            {item.done ? "OK" : "A faire"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      {currentStepDoneCount}/{currentStepChecklist.length} points avances dans cette etape
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {mode === "guided" ? (
+              <div className="pointer-events-none fixed right-6 top-24 z-40 hidden w-[300px] 2xl:block">
+                <div className="pointer-events-auto rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.16)] backdrop-blur">
+                  <p className="mb-3 text-sm font-semibold text-slate-500">Apercu</p>
+                  <div className="max-h-[260px] overflow-hidden rounded-[24px]">
+                    <SkeletonPreview form={guidedPrompt} />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+                {error}
+              </div>
+            ) : null}
+
+            {successMessage ? (
+              <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+                {successMessage}
+              </div>
+            ) : null}
+
+            {successMessage ? (
+              <div className="flex justify-end">
+                <Link className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700" href="/">
+                  Voir le resultat
+                </Link>
+              </div>
+            ) : null}
+          </div>
+        </form>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

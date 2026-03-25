@@ -7,20 +7,20 @@
   },
   "rendering": {
     "uiLibrary": {
-      "name": "MUI",
-      "package": "@mui/material",
-      "themeProvider": "@mui/material/styles",
-      "primitivesToken": "muiComponent"
+      "name": "Tailwind CSS",
+      "package": "tailwindcss",
+      "themeProvider": "css-variables-and-utility-classes",
+      "primitivesToken": "tailwindPrimitive"
     },
     "iconLibrary": {
-      "name": "MUI Icons",
-      "package": "@mui/icons-material",
-      "token": "muiIcon"
+      "name": "Runtime SVG Icons",
+      "package": "inline-svg",
+      "token": "icon"
     },
     "notes": [
-      "All design system primitives can be rendered with MUI.",
-      "All icon props should use the muiIcon token instead of free-form strings.",
-      "The runtime is expected to map CTA, layout, cards, forms and navigation to MUI components."
+      "All design system primitives are rendered with Tailwind utility classes and CSS variables.",
+      "All icon props should use the runtime icon token instead of a framework-specific icon package.",
+      "The runtime maps CTA, layout, cards, forms and navigation to React components styled with Tailwind CSS."
     ]
   },
   "tokens": {
@@ -66,57 +66,50 @@
     "badgeVariant": ["solid", "soft", "outline"],
     "animationType": ["none", "fade_in", "slide_up", "slide_left", "slide_right", "zoom_in"],
     "deviceVisibility": ["all", "desktop", "tablet", "mobile"],
-    "muiComponent": [
-      "Box",
-      "Container",
-      "Stack",
-      "Grid",
-      "Paper",
-      "Card",
-      "CardContent",
-      "Typography",
-      "Button",
-      "Chip",
-      "Accordion",
-      "AccordionSummary",
-      "AccordionDetails",
-      "TextField",
-      "MenuItem",
-      "Table",
-      "TableContainer",
-      "TableHead",
-      "TableBody",
-      "TableRow",
-      "TableCell",
-      "AppBar",
-      "Toolbar",
-      "Link",
-      "Avatar",
-      "Alert",
-      "CircularProgress"
+    "tailwindPrimitive": [
+      "div",
+      "section",
+      "article",
+      "nav",
+      "header",
+      "footer",
+      "button",
+      "a",
+      "img",
+      "form",
+      "input",
+      "textarea",
+      "select",
+      "table",
+      "thead",
+      "tbody",
+      "tr",
+      "td",
+      "th",
+      "span"
     ],
-    "muiIcon": [
-      "AccessTimeRounded",
-      "AutoAwesomeRounded",
-      "BakeryDiningRounded",
-      "CheckCircleRounded",
-      "ExpandMoreRounded",
-      "LayersRounded",
-      "LocalPhoneRounded",
-      "SecurityRounded",
-      "StarRounded",
-      "PersonRounded",
-      "CelebrationRounded",
-      "FavoriteRounded",
-      "InfoRounded",
-      "ArrowForwardRounded",
-      "ShoppingBagRounded",
-      "LocalOfferRounded"
+    "icon": [
+      "clock",
+      "sparkles",
+      "bakery",
+      "check",
+      "expand",
+      "layers",
+      "phone",
+      "shield",
+      "star",
+      "user",
+      "celebration",
+      "favorite",
+      "info",
+      "arrow_right",
+      "bag",
+      "offer"
     ],
-    "muiColor": ["inherit", "primary", "secondary", "success", "warning", "error", "info"],
-    "muiButtonVariant": ["text", "outlined", "contained"],
-    "muiChipVariant": ["filled", "outlined"],
-    "muiSize": ["small", "medium", "large"]
+    "themeColor": ["inherit", "primary", "secondary", "success", "warning", "error", "info"],
+    "buttonStyle": ["text", "outlined", "contained"],
+    "chipStyle": ["filled", "outlined"],
+    "iconSize": ["small", "medium", "large"]
   },
   "allowedComponents": [
     {
@@ -185,7 +178,7 @@
         "variant": "string",
         "content": "string",
         "align": "textAlign",
-        "color": "muiColor"
+        "color": "themeColor"
       }
     },
     {
@@ -193,19 +186,19 @@
       "props": {
         "label": "string",
         "action": "ctaAction",
-        "variant": "muiButtonVariant",
-        "color": "muiColor",
-        "size": "muiSize",
-        "startIcon": "muiIcon",
-        "endIcon": "muiIcon"
+        "variant": "buttonStyle",
+        "color": "themeColor",
+        "size": "iconSize",
+        "startIcon": "icon",
+        "endIcon": "icon"
       }
     },
     {
       "type": "mui_icon",
       "props": {
-        "name": "muiIcon",
-        "color": "muiColor",
-        "size": "muiSize"
+        "name": "icon",
+        "color": "themeColor",
+        "size": "iconSize"
       }
     },
     {
@@ -352,7 +345,7 @@
           {
             "label": "string",
             "href": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -524,7 +517,7 @@
           {
             "title": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -537,7 +530,7 @@
           {
             "title": "string",
             "description": "string",
-            "icon": "muiIcon",
+            "icon": "icon",
             "cta": {
               "label": "string",
               "action": "ctaAction"
@@ -599,7 +592,7 @@
           {
             "title": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -648,7 +641,7 @@
       "props": {
         "title": "string",
         "items": "string[]",
-        "icon": "muiIcon"
+        "icon": "icon"
       }
     },
     {
@@ -705,7 +698,7 @@
           {
             "title": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -746,7 +739,7 @@
             "number": "string",
             "title": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -801,7 +794,7 @@
           {
             "name": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -830,7 +823,7 @@
           {
             "industry": "string",
             "description": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -919,7 +912,7 @@
         "items": [
           {
             "label": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -932,7 +925,7 @@
           {
             "name": "string",
             "issuer": "string",
-            "icon": "muiIcon"
+            "icon": "icon"
           }
         ]
       }
@@ -953,7 +946,7 @@
       "props": {
         "title": "string",
         "content": "string",
-        "icon": "muiIcon"
+        "icon": "icon"
       }
     },
     {
@@ -1690,7 +1683,7 @@
       "type": "chip",
       "props": {
         "label": "string",
-        "icon": "muiIcon"
+        "icon": "icon"
       }
     },
     {
@@ -1702,15 +1695,15 @@
     {
       "type": "icon",
       "props": {
-        "name": "muiIcon",
-        "color": "muiColor",
-        "size": "muiSize"
+        "name": "icon",
+        "color": "themeColor",
+        "size": "iconSize"
       }
     },
     {
       "type": "icon_text",
       "props": {
-        "icon": "muiIcon",
+        "icon": "icon",
         "text": "string",
         "iconPosition": "iconPosition"
       }
@@ -1730,7 +1723,7 @@
       "props": {
         "title": "string",
         "content": "string",
-        "icon": "muiIcon"
+        "icon": "icon"
       }
     },
     {

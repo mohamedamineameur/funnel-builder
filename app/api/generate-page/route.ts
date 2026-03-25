@@ -20,6 +20,15 @@ interface ThemeConstraint {
   };
 }
 
+interface LocalizationConstraint {
+  locale?: string;
+  direction?: "ltr" | "rtl";
+  isRTL?: boolean;
+  supportedLocales?: string[];
+  translationContext?: string;
+  translationsEnabled?: boolean;
+}
+
 function sanitizePromptInput(value: unknown) {
   if (typeof value !== "string") {
     return "";
@@ -34,6 +43,20 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isHexColor(value: unknown): value is string {
   return typeof value === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+}
+
+function isLocaleString(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z]{2,3}([_-][a-zA-Z]{2,4})?$/.test(value.trim());
+}
+
+function normalizeLocale(value: string) {
+  const [language, region] = value.trim().replace(/_/g, "-").split("-");
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
+}
+
+function inferIsRtl(locale?: string) {
+  if (!locale) return false;
+  return ["ar", "fa", "he", "ur"].includes(normalizeLocale(locale).split("-")[0]);
 }
 
 function isDarkColor(value: string) {
@@ -84,6 +107,45 @@ function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
   };
 }
 
+function sanitizeLocalizationConstraint(value: unknown): LocalizationConstraint | null {
+  if (!isObject(value)) {
+    return null;
+  }
+
+  const locale = isLocaleString(value.locale) ? normalizeLocale(value.locale) : undefined;
+  const supportedLocales = Array.isArray(value.supportedLocales)
+    ? Array.from(
+        new Set(
+          value.supportedLocales
+            .filter((localeValue): localeValue is string => isLocaleString(localeValue))
+            .map((localeValue) => normalizeLocale(localeValue)),
+        ),
+      )
+    : locale
+      ? [locale]
+      : [];
+  const inferredDirection =
+    value.direction === "rtl" || value.direction === "ltr"
+      ? value.direction
+      : ((typeof value.isRTL === "boolean" ? value.isRTL : inferIsRtl(locale ?? supportedLocales[0])) ? "rtl" : "ltr");
+
+  if (!locale && supportedLocales.length === 0 && typeof value.translationContext !== "string") {
+    return null;
+  }
+
+  return {
+    ...(locale ? { locale } : {}),
+    ...(supportedLocales.length > 0 ? { supportedLocales } : {}),
+    ...(typeof value.translationContext === "string" && value.translationContext.trim()
+      ? { translationContext: value.translationContext.trim().slice(0, 500) }
+      : {}),
+    direction: inferredDirection,
+    isRTL: inferredDirection === "rtl",
+    translationsEnabled:
+      typeof value.translationsEnabled === "boolean" ? value.translationsEnabled : supportedLocales.length > 1,
+  };
+}
+
 function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstraint | null) {
   if (!themeConstraint) {
     return page;
@@ -101,8 +163,8 @@ function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstrain
       secondaryColor: themeConstraint.palette.secondary,
       accentColor: themeConstraint.palette.accent,
       backgroundColor: themeConstraint.palette.background,
-      surfaceColor: darkBackground ? themeConstraint.palette.primary : "#ffffff",
-      surfaceAltColor: darkBackground ? "#1f2937" : themeConstraint.palette.muted,
+      surfaceColor: darkBackground ? "#111827" : "#ffffff",
+      surfaceAltColor: darkBackground ? themeConstraint.palette.muted : themeConstraint.palette.muted,
       textColor: themeConstraint.palette.textPrimary,
       mutedTextColor: themeConstraint.palette.textSecondary,
       borderColor: darkBackground ? "#334155" : "#dbe4f0",
@@ -123,11 +185,40 @@ function applyThemeConstraint(page: PagePayload, themeConstraint: ThemeConstrain
   return validation.data;
 }
 
+function applyLocalizationConstraint(page: PagePayload, localizationConstraint: LocalizationConstraint | null) {
+  if (!localizationConstraint) {
+    return page;
+  }
+
+  const normalized = normalizePagePayloadForRuntime({
+    ...page,
+    localization: {
+      ...page.localization,
+      ...localizationConstraint,
+      direction: localizationConstraint.direction,
+      isRTL: localizationConstraint.isRTL,
+      translationsEnabled: localizationConstraint.translationsEnabled,
+    },
+  });
+  const validation = validatePagePayload(normalized);
+
+  if (!validation.success) {
+    throw new Error(`La configuration de langue imposee est invalide: ${validation.errors.join(" | ")}`);
+  }
+
+  return validation.data;
+}
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { prompt?: unknown; themeConstraint?: unknown };
+    const body = (await request.json()) as {
+      prompt?: unknown;
+      themeConstraint?: unknown;
+      localizationConstraint?: unknown;
+    };
     const prompt = sanitizePromptInput(body.prompt);
     const themeConstraint = sanitizeThemeConstraint(body.themeConstraint);
+    const localizationConstraint = sanitizeLocalizationConstraint(body.localizationConstraint);
 
     if (!prompt) {
       return NextResponse.json(
@@ -137,7 +228,8 @@ export async function POST(request: Request) {
     }
 
     const result = await generatePageWithImage(prompt);
-    const page = applyThemeConstraint(result.page, themeConstraint);
+    const themedPage = applyThemeConstraint(result.page, themeConstraint);
+    const page = applyLocalizationConstraint(themedPage, localizationConstraint);
     const targetPath = path.join(process.cwd(), "data", "page.json");
 
     await writeFile(targetPath, `${JSON.stringify(page, null, 2)}\n`, "utf8");

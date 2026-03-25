@@ -26,12 +26,175 @@ interface GeneratedImageSpec {
   alt?: string;
 }
 
+const VISIBLE_TEXT_SKIP_KEYS = new Set([
+  "slug",
+  "src",
+  "href",
+  "action",
+  "name",
+  "kind",
+  "type",
+  "variant",
+  "style",
+  "locale",
+  "direction",
+  "translationContext",
+  "supportedLocales",
+  "translationsEnabled",
+]);
+
+function isLocaleLikeKey(value: string) {
+  return value === "default" || /^[a-z]{2,3}([_-][a-zA-Z]{2,4})?$/.test(value.trim());
+}
+
 function sanitizeUserPrompt(prompt: string) {
   return prompt
     .replace(/[\u0000-\u001F\u007F]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 3000);
+}
+
+function collectVisibleStrings(value: unknown, currentKey?: string): string[] {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (
+      !trimmed ||
+      (currentKey && VISIBLE_TEXT_SKIP_KEYS.has(currentKey)) ||
+      /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed) ||
+      /^https?:\/\//.test(trimmed) ||
+      trimmed.startsWith("/")
+    ) {
+      return [];
+    }
+
+    return [trimmed];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectVisibleStrings(item, currentKey));
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+
+  return Object.entries(value).flatMap(([key, nestedValue]) => collectVisibleStrings(nestedValue, key));
+}
+
+function isLocalizedTextRecord(value: unknown): value is Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const entries = Object.entries(value);
+  return entries.length > 0 && entries.every(([key, nestedValue]) => isLocaleLikeKey(key) && typeof nestedValue === "string");
+}
+
+function countLocalizedRecords(value: unknown, requestedLocales: string[]): number {
+  if (Array.isArray(value)) {
+    return value.reduce((total, item) => total + countLocalizedRecords(item, requestedLocales), 0);
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return 0;
+  }
+
+  if (isLocalizedTextRecord(value)) {
+    const normalizedKeys = Object.keys(value).map((key) => key.toLowerCase().split("-")[0]);
+    const hasAllRequestedLocales = requestedLocales.every((locale) => normalizedKeys.includes(locale));
+    return hasAllRequestedLocales ? 1 : 0;
+  }
+
+  return Object.values(value).reduce((total, item) => total + countLocalizedRecords(item, requestedLocales), 0);
+}
+
+function getPreviewText(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (!isLocalizedTextRecord(value)) {
+    return "Page marketing";
+  }
+
+  return value.default ?? value.fr ?? value.en ?? Object.values(value)[0] ?? "Page marketing";
+}
+
+function countLongRegexMatches(values: string[], regex: RegExp, minLength = 10) {
+  return values.reduce((total, value) => {
+    const normalizedValue = value.trim();
+    return total + (normalizedValue.length >= minLength && regex.test(normalizedValue) ? 1 : 0);
+  }, 0);
+}
+
+function countCharactersMatching(values: string[], regex: RegExp) {
+  return values.reduce((total, value) => total + (value.match(regex)?.length ?? 0), 0);
+}
+
+function hasLocaleEvidence(locale: string, values: string[]) {
+  const normalizedLocale = locale.toLowerCase().split("-")[0];
+
+  switch (normalizedLocale) {
+    case "ar":
+      return countCharactersMatching(values, /[\u0600-\u06FF]/g) >= 12;
+    case "fr":
+      return countLongRegexMatches(
+        values,
+        /\b(le|la|les|des|une|un|avec|pour|vous|votre|decouvrez|commander|patisserie|clients|questions|francais)\b/i,
+      ) >= 2;
+    case "en":
+      return countLongRegexMatches(
+        values,
+        /\b(the|and|your|with|discover|learn|start|get|order|features|pricing|testimonials|questions|english|delivery|handcrafted)\b/i,
+      ) >= 2;
+    default:
+      return values.some((value) => value.toLowerCase().includes(normalizedLocale));
+  }
+}
+
+function validateLocalizationConsistency(page: PagePayload) {
+  const supportedLocales = page.localization?.supportedLocales ?? [];
+  const locale = page.localization?.locale?.toLowerCase().split("-")[0];
+  const direction = page.localization?.direction;
+  const isRTL = page.localization?.isRTL;
+  const visibleStrings = collectVisibleStrings({
+    title: page.title,
+    sections: page.sections.map((section) => section.props),
+  });
+  const arabicCharacterCount = countCharactersMatching(visibleStrings, /[\u0600-\u06FF]/g);
+  const latinCharacterCount = countCharactersMatching(visibleStrings, /[A-Za-z]/g);
+  const requestedLocales = Array.from(new Set([...(locale ? [locale] : []), ...supportedLocales.map((item) => item.toLowerCase().split("-")[0])]));
+  const localizedRecordCount = countLocalizedRecords(
+    {
+      title: page.title,
+      sections: page.sections.map((section) => section.props),
+    },
+    requestedLocales,
+  );
+
+  if ((direction === "rtl" || isRTL || locale === "ar") && arabicCharacterCount < Math.max(24, latinCharacterCount / 3)) {
+    throw new Error(
+      "[multilingual_guard] Le JSON annonce une page arabe / RTL mais le contenu visible ne contient pas assez de texte arabe.",
+    );
+  }
+
+  if (requestedLocales.length > 1) {
+    const missingLocales = requestedLocales.filter((requestedLocale) => !hasLocaleEvidence(requestedLocale, visibleStrings));
+
+    if (missingLocales.length > 0) {
+      throw new Error(
+        `[multilingual_guard] Le JSON annonce plusieurs langues (${requestedLocales.join(", ")}) mais aucune preuve visible suffisante n'a ete detectee pour: ${missingLocales.join(", ")}.`,
+      );
+    }
+
+    if (localizedRecordCount < 3) {
+      throw new Error(
+        `[multilingual_guard] Le JSON annonce plusieurs langues (${requestedLocales.join(", ")}) mais il ne contient pas assez de champs localises de type { locale: texte }.`,
+      );
+    }
+  }
 }
 
 function extractTextContent(payload: unknown) {
@@ -244,8 +407,10 @@ function validateGeneratedBundle(value: unknown, userRequest: string): Generated
     throw new Error(`Le JSON genere ne respecte pas le DSL: ${validation.errors.join(" | ")}`);
   }
 
+  validateLocalizationConsistency(validation.data);
+
   const fallbackImagePrompt = `A professional marketing visual for this landing page context: ${sanitizeUserPrompt(userRequest)}. Clean composition, premium lighting, realistic product-style or dashboard-style visual, no text, no watermark, high-end brand aesthetic.`;
-  const fallbackImageAlt = validation.data.title;
+  const fallbackImageAlt = getPreviewText(validation.data.title);
   const rawImages = Array.isArray(value.images) ? value.images : [];
 
   const images: GeneratedImageSpec[] =
@@ -347,8 +512,36 @@ function injectGeneratedImagesIntoPage(
 
   if (remainingImages.length > 0) {
     const footerIndex = sections.findIndex((section) => section.type === "footer");
+    const galleryIndex = sections.findIndex((section) => section.type === "gallery");
     const insertionIndex = footerIndex >= 0 ? footerIndex : sections.length;
     const galleryVariant = normalizeImageDisplayVariant(imageDisplay);
+    const galleryItems = remainingImages.map((image) => ({
+      src: image.src,
+      alt: image.alt,
+    }));
+
+    if (galleryIndex >= 0) {
+      const gallerySection = sections[galleryIndex];
+      const galleryProps = isObject(gallerySection.props) ? gallerySection.props : {};
+
+      sections[galleryIndex] = {
+        ...gallerySection,
+        variant: galleryVariant === "hero" ? "grid" : galleryVariant,
+        props: {
+          ...galleryProps,
+          title:
+            typeof galleryProps.title === "string" && galleryProps.title.trim().length > 0
+              ? galleryProps.title
+              : "Galerie",
+          items: galleryItems,
+        },
+      };
+
+      return {
+        ...page,
+        sections,
+      };
+    }
 
     if (galleryVariant === "hero" && remainingImages.length === 1) {
       sections.splice(
@@ -371,10 +564,7 @@ function injectGeneratedImagesIntoPage(
           variant: galleryVariant === "hero" ? "grid" : galleryVariant,
           props: {
             title: "Galerie",
-            items: remainingImages.map((image) => ({
-              src: image.src,
-              alt: image.alt,
-            })),
+            items: galleryItems,
           },
         } as PagePayload["sections"][number],
       );
@@ -422,6 +612,22 @@ Regles de securite non negociables:
 - Le theme doit aussi contenir cornerStyle parmi: sharp, balanced, rounded.
 - Le theme doit utiliser "palette" comme source de verite couleur: { primary, secondary, background, textPrimary, textSecondary, accent, muted }.
 - Ne genere pas de couleurs top-level dans le theme comme primaryColor, secondaryColor, accentColor, backgroundColor, surfaceColor, surfaceAltColor, textColor, mutedTextColor, borderColor, buttonTextColor, successColor ou warningColor, sauf si c'est strictement necessaire pour rester conforme au DSL.
+- Si la demande mentionne une langue, du RTL, de l'arabe ou du multilingue, inclus un objet localization avec au minimum locale, direction, isRTL et si necessaire supportedLocales, translationContext, translationsEnabled.
+- Si l'utilisateur demande explicitement une langue precise, tous les textes visibles de la page doivent etre rediges dans cette langue.
+- Si l'utilisateur demande explicitement de l'arabe, du RTL ou une lecture de droite a gauche, tous les textes visibles doivent etre en arabe, localization.locale doit etre "ar", localization.direction doit etre "rtl" et localization.isRTL doit etre true.
+- Si l'utilisateur demande plusieurs langues, ne te contente pas d'ajouter localization: le contenu et l'UX doivent refleter cette intention multilingue de facon credible.
+- Si plusieurs langues sont demandees, les principaux champs texte visibles doivent etre fournis sous forme d'objets localises, par exemple:
+-   "headline": { "fr": "...", "en": "...", "ar": "..." }
+-   "title": { "fr": "...", "en": "...", "ar": "..." }
+-   "label": { "fr": "...", "en": "...", "ar": "..." }
+- N'utilise pas ce format localise pour href, src, action, slug ou les couleurs.
+- N'active pas translationsEnabled et n'ajoute pas supportedLocales artificiellement si la demande utilisateur ne parle pas vraiment de plusieurs langues.
+- Avant de repondre, fais une verification interne stricte:
+- 1. Si tu indiques plusieurs langues dans localization.supportedLocales, assure-toi de ne pas avoir oublie cette contrainte dans le contenu.
+- 2. Si locale = "ar" ou direction = "rtl" ou isRTL = true, verifie que les textes visibles ne sont pas restes en francais ou en anglais par erreur.
+- 3. Si une langue principale est demandee, verifie une seconde fois que hero, benefits, form, faq, testimonials, pricing, footer et CTA utilisent bien cette langue.
+- 4. Si tu detectes que tu as oublie les langues demandees, corrige le JSON avant de repondre.
+- 5. Ne retourne jamais un faux multilingue avec seulement localization rempli mais un contenu monolingue incoherent.
 - Si l'utilisateur cite explicitement une reference visuelle, une marque, un produit ou un univers design, retranscris cette direction de maniere abstraite dans la palette, les contrastes, la chaleur des couleurs, la densite visuelle et le tone.
 - Ne te refugie jamais derriere une palette SaaS generique si le prompt demande un style visuel precis.
 - En plus de la page, tu dois generer un prompt d'image marketing adapte au contexte.
@@ -458,6 +664,17 @@ Contraintes de sortie:
 - garder un ton coherent avec la demande
 - choisir un slug propre en kebab-case
 - toujours inclure theme avec une palette pensee specifiquement pour la demande
+- si la demande parle de langue ou traduction, toujours inclure localization coherent avec la langue principale et le sens d'affichage
+- si la demande impose une langue, tous les textes visibles des sections doivent etre ecrits dans cette langue
+- si la demande impose l'arabe ou le RTL, la page doit etre en arabe avec direction rtl, isRTL true et une structure visuelle compatible
+- si la demande parle de plusieurs langues, ne simule pas un faux multilingue: les principaux textes visibles doivent utiliser un format localise du type { fr: "...", en: "...", ar: "..." }
+- applique ce format localise au minimum sur headline, subheadline, title, CTA, labels de formulaire, questions/reponses FAQ et textes visibles majeurs
+- verification finale obligatoire avant de repondre:
+-   si plusieurs langues sont mentionnees, verifie que tu ne les as pas oubliees
+-   si l'arabe ou le RTL est demande, verifie que le contenu visible est bien en arabe
+-   si une langue principale est imposee, verifie que toutes les sections visibles respectent cette langue
+-   si plusieurs langues sont demandees, verifie qu'il existe plusieurs champs JSON localises avec les cles de langue attendues
+-   si cette verification echoue, corrige le JSON avant de l'envoyer
 - le theme doit idealement ressembler a:
 - {
 -   "name": "generated_theme",
@@ -483,33 +700,54 @@ Contraintes de sortie:
 
 export async function generatePageJsonWithOpenAI(userRequest: string): Promise<GeneratedPageBundle> {
   const openai = getOpenAIClient();
-  const prompt = await buildSecurePageGenerationPrompt(userRequest);
 
-  const response = await openai.chat.completions.create({
-    model: DEFAULT_OPENAI_MODEL,
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: prompt.system },
-      { role: "user", content: prompt.user },
-    ],
-  });
+  async function requestBundle(requestText: string) {
+    const prompt = await buildSecurePageGenerationPrompt(requestText);
 
-  const content = extractTextContent(response as unknown);
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: prompt.system },
+        { role: "user", content: prompt.user },
+      ],
+    });
 
-  if (!content) {
-    throw new Error("OpenAI n'a retourne aucun contenu exploitable.");
+    const content = extractTextContent(response as unknown);
+
+    if (!content) {
+      throw new Error("OpenAI n'a retourne aucun contenu exploitable.");
+    }
+
+    let parsed: unknown;
+
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new Error("Le contenu retourne par OpenAI n'est pas un JSON valide.");
+    }
+
+    return validateGeneratedBundle(parsed, requestText);
   }
-
-  let parsed: unknown;
 
   try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error("Le contenu retourne par OpenAI n'est pas un JSON valide.");
-  }
+    return await requestBundle(userRequest);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("[multilingual_guard]")) {
+      throw error;
+    }
 
-  return validateGeneratedBundle(parsed, userRequest);
+    return requestBundle(
+      `${userRequest}
+
+IMPORTANT:
+- Tu as oublie une ou plusieurs langues demandees dans le contenu visible.
+- Ne declare pas supportedLocales ou translationsEnabled si le contenu reste monolingue.
+- Si la page est arabe ou RTL, tous les textes visibles doivent etre en arabe.
+- Si plusieurs langues sont annoncees, montre une vraie preuve visible et coherente de ces langues dans le JSON.`,
+    );
+  }
 }
 
 export async function generatePageWithImage(userRequest: string): Promise<GeneratedPageBundle> {
@@ -539,7 +777,7 @@ export async function generatePageWithImage(userRequest: string): Promise<Genera
     generatedImages.push({
       src: imageSrc,
       target: imageSpec.target,
-      alt: imageSpec.alt ?? `${generatedBundle.page.title} visuel ${index + 1}`,
+      alt: imageSpec.alt ?? `${getPreviewText(generatedBundle.page.title)} visuel ${index + 1}`,
     });
   }
 
