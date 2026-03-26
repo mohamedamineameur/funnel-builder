@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { jsonError, isRecord, sanitizeProjectName } from "@/lib/api-utils";
 import { getModels, syncDatabase } from "@/lib/models";
-import { runAsUser } from "@/lib/rls";
+import { listOwnedProjects } from "@/lib/ownership";
 
 export const runtime = "nodejs";
 
@@ -17,12 +17,7 @@ export async function GET() {
     await syncDatabase();
     const { Project } = getModels();
 
-    const projects = await runAsUser(auth.user.userId, async (transaction) => {
-      return Project.findAll({
-        order: [["createdAt", "DESC"]],
-        transaction,
-      });
-    });
+    const projects = await listOwnedProjects(auth.user.userId);
 
     return NextResponse.json(projects);
   } catch (error) {
@@ -57,15 +52,9 @@ export async function POST(request: Request) {
 
     await syncDatabase();
     const { Project } = getModels();
-
-    const project = await runAsUser(currentUserId, async (transaction) => {
-      return Project.create(
-        {
-          name,
-          userId: currentUserId,
-        },
-        { transaction },
-      );
+    const project = await Project.create({
+      name,
+      userId: currentUserId,
     });
 
     return NextResponse.json(project, { status: 201 });

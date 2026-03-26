@@ -20,9 +20,11 @@ interface PageInlineEditorContextValue {
   openEditor: (field: EditorFieldState) => void;
   closeEditor: () => void;
   saveField: (nextValue: string) => Promise<void>;
+  uploadImage?: (file: File) => Promise<string>;
   isSaving: boolean;
   saveError: string | null;
   lastSavedAt: number | null;
+  imageOptions: string[];
 }
 
 const defaultContextValue: PageInlineEditorContextValue = {
@@ -33,9 +35,11 @@ const defaultContextValue: PageInlineEditorContextValue = {
   openEditor: () => undefined,
   closeEditor: () => undefined,
   saveField: async () => undefined,
+  uploadImage: undefined,
   isSaving: false,
   saveError: null,
   lastSavedAt: null,
+  imageOptions: [],
 };
 
 const PageInlineEditorContext = createContext<PageInlineEditorContextValue>(defaultContextValue);
@@ -206,11 +210,15 @@ export function PageInlineEditorDock() {
 }
 
 export function PageInlineEditorModal() {
-  const { activeField, closeEditor, isSaving, saveField, saveError } = usePageInlineEditor();
+  const { activeField, closeEditor, isSaving, saveField, saveError, imageOptions, uploadImage } = usePageInlineEditor();
   const [draftValue, setDraftValue] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraftValue(activeField?.value ?? "");
+    setUploadError(null);
+    setIsUploadingImage(false);
   }, [activeField]);
 
   if (!activeField) {
@@ -219,6 +227,11 @@ export function PageInlineEditorModal() {
 
   const InputTag = activeField.multiline ? "textarea" : "input";
   const charCount = draftValue.trim().length;
+  const isImageField = activeField.path[activeField.path.length - 1] === "src";
+  const uniqueImageOptions = Array.from(new Set(imageOptions.filter((item) => item.trim().length > 0)));
+  const visibleImageOptions = draftValue.trim() && !uniqueImageOptions.includes(draftValue.trim())
+    ? [draftValue.trim(), ...uniqueImageOptions]
+    : uniqueImageOptions;
 
   return (
     <div
@@ -231,9 +244,21 @@ export function PageInlineEditorModal() {
       }}
       role="dialog"
     >
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="overflow-hidden rounded-[34px] border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.96)_100%)] shadow-[0_32px_90px_rgba(15,23,42,0.34)]">
-          <div className="border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(37,99,235,0.08),rgba(255,255,255,0.94)_42%,rgba(14,165,233,0.08))] px-6 py-5 sm:px-7">
+      <div className={cx("mx-auto flex w-full items-center justify-center", isImageField ? "max-w-2xl" : "max-w-3xl")}>
+        <div
+          className={cx(
+            "flex w-full flex-col overflow-hidden border border-white/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(248,250,252,0.96)_100%)] shadow-[0_32px_90px_rgba(15,23,42,0.34)]",
+            isImageField
+              ? "max-h-[calc(100vh-110px)] rounded-[26px]"
+              : "max-h-[calc(100vh-48px)] rounded-[34px]",
+          )}
+        >
+          <div
+            className={cx(
+              "border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(37,99,235,0.08),rgba(255,255,255,0.94)_42%,rgba(14,165,233,0.08))]",
+              isImageField ? "px-4 py-3.5 sm:px-5" : "px-6 py-5 sm:px-7",
+            )}
+          >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -241,10 +266,10 @@ export function PageInlineEditorModal() {
                     Edition directe
                   </span>
                 </div>
-                <h3 className="mt-4 text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">
+                <h3 className={cx("font-black tracking-[-0.03em] text-slate-950", isImageField ? "mt-2.5 text-xl sm:text-2xl" : "mt-4 text-2xl sm:text-3xl")}>
                   {activeField.label}
                 </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                <p className={cx("max-w-2xl text-sm text-slate-600", isImageField ? "mt-2 text-sm leading-5" : "mt-3 leading-6")}>
                   Modifie le contenu ci-dessous puis enregistre pour reappliquer immediatement le rendu.
                 </p>
               </div>
@@ -262,52 +287,147 @@ export function PageInlineEditorModal() {
             </div>
           </div>
 
-          <div className="grid gap-5 px-6 py-6 sm:px-7">
-            <div className="grid gap-3 rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+          <div className={cx("min-h-0 overflow-y-auto", isImageField ? "px-4 py-4 sm:px-5" : "px-6 py-6 sm:px-7")}>
+            <div className="grid gap-5">
+            <div className={cx("grid gap-3 border border-slate-200 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.05)]", isImageField ? "rounded-[22px] p-3.5" : "rounded-[26px] p-4")}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Champ cible</p>
                   <p className="mt-1 text-sm text-slate-500">
-                    {activeField.multiline ? "Contenu long, adapte a un texte descriptif." : "Contenu court, adapte a un titre ou un label."}
+                    {isImageField
+                      ? "Choisis un visuel deja disponible dans ta bibliotheque."
+                      : activeField.multiline
+                        ? "Contenu long, adapte a un texte descriptif."
+                        : "Contenu court, adapte a un titre ou un label."}
                   </p>
                 </div>
                 <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {charCount} caracteres
+                  {isImageField ? `${visibleImageOptions.length} visuels` : `${charCount} caracteres`}
                 </div>
               </div>
 
-              <InputTag
-                className={cx(
-                  "w-full rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-5 py-4 text-[15px] leading-7 text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.03)] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100",
-                  activeField.multiline ? "min-h-[280px] resize-y" : "min-h-14",
-                )}
-                dir="auto"
-                onChange={(event) => setDraftValue(event.target.value)}
-                placeholder="Saisis ta nouvelle valeur..."
-                value={draftValue}
-                {...(activeField.multiline ? { rows: 10 } : { type: "text" })}
-              />
+              {isImageField && uploadImage ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-black">
+                    {isUploadingImage ? "Envoi en cours..." : "Uploader une image"}
+                    <input
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      disabled={isUploadingImage || isSaving}
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) {
+                          return;
+                        }
+
+                        setIsUploadingImage(true);
+                        setUploadError(null);
+
+                        try {
+                          const uploadedSrc = await uploadImage(file);
+                          setDraftValue(uploadedSrc);
+                        } catch (error) {
+                          setUploadError(
+                            error instanceof Error ? error.message : "Impossible d'envoyer cette image.",
+                          );
+                        } finally {
+                          setIsUploadingImage(false);
+                          event.currentTarget.value = "";
+                        }
+                      }}
+                      type="file"
+                    />
+                  </label>
+                  <p className="text-[13px] text-slate-500">
+                    PNG, JPG, WEBP ou GIF. L'image sera ajoutee a la galerie ci-dessous.
+                  </p>
+                </div>
+              ) : null}
+
+              {uploadError ? (
+                <div className="rounded-[18px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {uploadError}
+                </div>
+              ) : null}
+
+              {isImageField ? (
+                visibleImageOptions.length > 0 ? (
+                  <div className="max-h-[290px] overflow-y-auto pr-1">
+                    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {visibleImageOptions.map((imageSrc) => {
+                      const isSelected = draftValue.trim() === imageSrc;
+
+                      return (
+                        <button
+                          className={cx(
+                            "group relative overflow-hidden rounded-[24px] border bg-white text-left transition hover:-translate-y-0.5",
+                            isSelected
+                              ? "border-blue-600 ring-4 ring-blue-200 shadow-[0_20px_40px_rgba(37,99,235,0.28)]"
+                              : "border-slate-200 hover:border-slate-300",
+                          )}
+                          key={imageSrc}
+                          onClick={() => setDraftValue(imageSrc)}
+                          type="button"
+                        >
+                          {isSelected ? (
+                            <div className="absolute left-2 top-2 z-10 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-white shadow-[0_10px_24px_rgba(37,99,235,0.32)]">
+                              <span className="inline-block h-2 w-2 rounded-full bg-white" />
+                              Selectionne
+                            </div>
+                          ) : null}
+                          <img alt={activeField.label} className="h-24 w-full object-cover" src={imageSrc} />
+                          <div
+                            className={cx(
+                              "grid gap-1.5 p-3 transition",
+                              isSelected ? "bg-blue-50" : "bg-white",
+                            )}
+                          >
+                            <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                              {isSelected ? "Visuel selectionne" : "Choisir ce visuel"}
+                            </p>
+                            <p className="truncate text-[11px] text-slate-500">{imageSrc}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid min-h-[180px] place-items-center rounded-[20px] border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-sm leading-6 text-slate-500">
+                    Aucun visuel disponible pour le moment dans la bibliotheque.
+                  </div>
+                )
+              ) : (
+                <InputTag
+                  className={cx(
+                    "w-full rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-5 py-4 text-[15px] leading-7 text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.03)] outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100",
+                    activeField.multiline ? "min-h-[280px] resize-y" : "min-h-14",
+                  )}
+                  dir="auto"
+                  onChange={(event) => setDraftValue(event.target.value)}
+                  placeholder="Saisis ta nouvelle valeur..."
+                  value={draftValue}
+                  {...(activeField.multiline ? { rows: 10 } : { type: "text" })}
+                />
+              )}
             </div>
 
             {saveError ? (
-              <div className="rounded-[22px] border border-red-200 bg-[linear-gradient(180deg,#fff1f2_0%,#fff7f7_100%)] px-4 py-4 text-sm text-red-700 shadow-sm">
+              <div className={cx("border border-red-200 bg-[linear-gradient(180deg,#fff1f2_0%,#fff7f7_100%)] px-4 py-4 text-sm text-red-700 shadow-sm", isImageField ? "rounded-[16px]" : "rounded-[22px]")}>
                 <p className="font-semibold">L'enregistrement n'a pas fonctionne</p>
                 <p className="mt-1 leading-6">{saveError}</p>
               </div>
-            ) : (
-              <div className="rounded-[22px] border border-emerald-100 bg-[linear-gradient(180deg,#f0fdf4_0%,#f8fffb_100%)] px-4 py-4 text-sm text-emerald-800 shadow-sm">
-                <p className="font-semibold">Enregistrement instantane</p>
-                <p className="mt-1 leading-6 text-emerald-700/90">
-                  Clique sur <strong>Enregistrer</strong> pour mettre a jour ta page sans quitter cet ecran.
-                </p>
-              </div>
-            )}
+            ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-[26px] border border-slate-200 bg-slate-50/90 px-4 py-4">
+            <div className={cx("flex flex-wrap items-center justify-between gap-4 border border-slate-200 bg-slate-50/90 px-4 py-4", isImageField ? "rounded-[16px]" : "rounded-[26px]")}>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900">Modification en cours</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {isSaving ? "Ton changement est en cours d'enregistrement..." : "Verifie ton texte puis valide."}
+                  {isSaving
+                    ? "Ton changement est en cours d'enregistrement..."
+                    : isImageField
+                      ? "Choisis un visuel puis valide."
+                      : "Verifie ton texte puis valide."}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -334,6 +454,7 @@ export function PageInlineEditorModal() {
                   {isSaving ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>

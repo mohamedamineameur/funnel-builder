@@ -9,10 +9,22 @@ function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
+const navItemClass =
+  "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5";
+
+const activeNavItemClass =
+  "border-slate-950 bg-slate-950 text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]";
+
+const inactiveNavItemClass =
+  "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white";
+
 export function WorkspacePageShell({ children }: { children: ReactNode }) {
   const { currentProject, loading, logout, user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const projectsActive = pathname === "/projects" || pathname?.startsWith("/projects/");
+  const dashboardActive = pathname === "/dashboard";
+  const promptActive = pathname === "/prompt";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,47 +50,33 @@ export function WorkspacePageShell({ children }: { children: ReactNode }) {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link
               className={cx(
-                "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5",
-                pathname === "/projects" || pathname?.startsWith("/projects/")
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white",
+                navItemClass,
+                projectsActive ? activeNavItemClass : inactiveNavItemClass,
               )}
               href="/projects"
+              style={projectsActive ? { color: "#f8fafc", WebkitTextFillColor: "#f8fafc" } : undefined}
             >
               Projets
             </Link>
             <Link
               className={cx(
-                "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5",
-                pathname === "/dashboard"
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white",
+                navItemClass,
+                dashboardActive ? activeNavItemClass : inactiveNavItemClass,
               )}
               href="/dashboard"
+              style={dashboardActive ? { color: "#f8fafc", WebkitTextFillColor: "#f8fafc" } : undefined}
             >
               Dashboard
             </Link>
             <Link
               className={cx(
-                "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5",
-                pathname === "/prompt"
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white",
+                navItemClass,
+                promptActive ? activeNavItemClass : inactiveNavItemClass,
               )}
               href="/prompt"
+              style={promptActive ? { color: "#f8fafc", WebkitTextFillColor: "#f8fafc" } : undefined}
             >
               Prompt
-            </Link>
-            <Link
-              className={cx(
-                "inline-flex min-h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition hover:-translate-y-0.5",
-                pathname === "/edition"
-                  ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-white",
-              )}
-              href="/edition"
-            >
-              Edition
             </Link>
             <button
               className="inline-flex min-h-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:bg-white"

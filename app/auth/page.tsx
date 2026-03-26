@@ -10,7 +10,7 @@ function cx(...values: Array<string | false | null | undefined>) {
 }
 
 export default function AuthPage() {
-  const { loading, login, register, user } = useAuth();
+  const { loading, login, projects, register, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -19,12 +19,19 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const nextPath = useMemo(() => searchParams.get("next") || "/projects", [searchParams]);
+  const redirectPath = useMemo(() => {
+    if (!user) {
+      return nextPath;
+    }
+
+    return projects.length === 0 ? "/onboarding" : nextPath;
+  }, [nextPath, projects.length, user]);
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace(nextPath);
+      router.replace(redirectPath);
     }
-  }, [loading, nextPath, router, user]);
+  }, [loading, redirectPath, router, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,7 +45,6 @@ export default function AuthPage() {
         await register({ username, password });
       }
 
-      router.replace(nextPath);
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "Impossible de finaliser l'authentification.",

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { isRecord, isUuid, jsonError, sanitizePayload } from "@/lib/api-utils";
 import { getModels, syncDatabase } from "@/lib/models";
-import { runAsUser } from "@/lib/rls";
+import {
+  findOwnedProject,
+  listOwnedPagesForProject,
+} from "@/lib/ownership";
+import { getSequelize } from "@/lib/sequelize";
 
 export const runtime = "nodejs";
 
@@ -27,28 +31,13 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     await syncDatabase();
-    const { Page, Project } = getModels();
+    const project = await findOwnedProject(auth.user.userId, projectId);
 
-    const pages = await runAsUser(auth.user.userId, async (transaction) => {
-      const project = await Project.findByPk(projectId, { transaction });
-
-      if (!project) {
-        return null;
-      }
-
-      return Page.findAll({
-        where: { projectId },
-        order: [
-          ["isEffective", "DESC"],
-          ["createdAt", "DESC"],
-        ],
-        transaction,
-      });
-    });
-
-    if (!pages) {
+    if (!project) {
       return jsonError("Projet introuvable.", 404);
     }
+
+    const pages = await listOwnedPagesForProject(auth.user.userId, projectId);
 
     return NextResponse.json(pages);
   } catch (error) {
@@ -87,10 +76,9 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     await syncDatabase();
-    const { Page, Project } = getModels();
-
-    const page = await runAsUser(auth.user.userId, async (transaction) => {
-      const project = await Project.findByPk(projectId, { transaction });
+    const { Page } = getModels();
+    const page = await getSequelize().transaction(async (transaction) => {
+      const project = await findOwnedProject(auth.user.userId, projectId, { transaction });
 
       if (!project) {
         return null;

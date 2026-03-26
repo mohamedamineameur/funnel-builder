@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeProjectName } from "@/lib/project-name";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -40,13 +41,7 @@ export function sanitizeUsername(value: unknown) {
 }
 
 export function sanitizeProjectName(value: unknown) {
-  const name = readTrimmedString(value);
-
-  if (!name) {
-    return null;
-  }
-
-  return name.slice(0, 255);
+  return normalizeProjectName(value);
 }
 
 export function sanitizePassword(value: unknown) {

@@ -22,6 +22,11 @@ interface WorkspaceState {
   projects: WorkspaceProject[];
   currentProject: WorkspaceProject | null;
   effectivePage: RuntimePagePayload | null;
+  effectivePageMeta: {
+    id: string;
+    isEffective?: boolean;
+    createdAt?: string | Date;
+  } | null;
 }
 
 interface AuthContextValue extends WorkspaceState {
@@ -60,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     projects: [],
     currentProject: null,
     effectivePage: null,
+    effectivePageMeta: null,
   });
 
   const refreshWorkspace = useCallback(async () => {
@@ -73,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         projects: payload.projects ?? [],
         currentProject: payload.currentProject,
         effectivePage: payload.effectivePage,
+        effectivePageMeta: payload.effectivePageMeta ?? null,
       });
     } catch {
       setWorkspace({
@@ -80,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         projects: [],
         currentProject: null,
         effectivePage: null,
+        effectivePageMeta: null,
       });
     } finally {
       setLoading(false);
@@ -125,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       projects: [],
       currentProject: null,
       effectivePage: null,
+      effectivePageMeta: null,
     });
   }, []);
 
@@ -147,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       projects: workspace.projects,
       currentProject: workspace.currentProject,
       effectivePage: workspace.effectivePage,
+      effectivePageMeta: workspace.effectivePageMeta,
       login,
       register,
       logout,

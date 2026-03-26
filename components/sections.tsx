@@ -376,13 +376,70 @@ function GalleryImageFrame({
   height,
   srcEditPath,
   srcEditLabel,
+  loadingMode = "lazy",
+  priority = "auto",
 }: {
   src: string;
   alt: string;
   height: number;
   srcEditPath?: PageEditorPathSegment[];
   srcEditLabel?: string;
+  loadingMode?: "eager" | "lazy";
+  priority?: "high" | "low" | "auto";
 }) {
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const resolvedSrc = typeof src === "string" ? src.trim() : "";
+
+  useEffect(() => {
+    setHasLoaded(false);
+    setHasError(false);
+  }, [resolvedSrc]);
+
+  useEffect(() => {
+    if (!resolvedSrc) {
+      setHasError(true);
+      setHasLoaded(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const image = new window.Image();
+    image.decoding = "async";
+
+    image.onload = () => {
+      if (!isCancelled) {
+        setHasLoaded(true);
+        setHasError(false);
+      }
+    };
+
+    image.onerror = () => {
+      if (!isCancelled) {
+        setHasError(true);
+        setHasLoaded(false);
+      }
+    };
+
+    image.src = resolvedSrc;
+
+    if (image.complete) {
+      if (image.naturalWidth > 0) {
+        setHasLoaded(true);
+        setHasError(false);
+      } else {
+        setHasError(true);
+        setHasLoaded(false);
+      }
+    }
+
+    return () => {
+      isCancelled = true;
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [resolvedSrc]);
+
   return (
     <div
       className="group/page-edit relative grid overflow-hidden rounded-[var(--radius-card)] border border-[var(--border)] bg-[var(--image-frame-bg)] p-4"
@@ -395,10 +452,37 @@ function GalleryImageFrame({
         path={srcEditPath}
         value={src}
       />
+      {!hasLoaded && !hasError ? (
+        <div className="absolute inset-4 grid place-items-center rounded-[calc(var(--radius-card)-8px)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--surface)_92%,white),color-mix(in_srgb,var(--surface-alt)_72%,white))] text-center text-sm text-[var(--text-muted)]">
+          <div className="grid gap-2">
+            <div className="mx-auto h-10 w-10 animate-pulse rounded-full bg-[color-mix(in_srgb,var(--primary)_14%,white)]" />
+            <p>Chargement du visuel...</p>
+          </div>
+        </div>
+      ) : null}
+      {hasError ? (
+        <div className="absolute inset-4 grid place-items-center rounded-[calc(var(--radius-card)-8px)] border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_94%,white)] px-4 text-center text-sm text-[var(--text-muted)]">
+          {resolvedSrc ? "Impossible de charger cette image." : "Source d'image vide."}
+        </div>
+      ) : null}
       <img
         alt={alt}
-        className="mx-auto block h-auto max-h-full w-auto max-w-full object-contain"
-        src={src}
+        className={cx(
+          "mx-auto block h-auto max-h-full w-auto max-w-full object-contain transition-opacity duration-300",
+          hasLoaded && !hasError ? "opacity-100" : "opacity-0",
+        )}
+        decoding="async"
+        fetchPriority={priority}
+        loading={loadingMode}
+        onError={() => {
+          setHasError(true);
+          setHasLoaded(false);
+        }}
+        onLoad={() => {
+          setHasLoaded(true);
+          setHasError(false);
+        }}
+        src={resolvedSrc}
         style={{ maxHeight: height - 32 }}
       />
     </div>
@@ -1126,6 +1210,8 @@ export function GallerySection({
               <GalleryImageFrame
                 alt={items[safeIndex].alt}
                 height={440}
+                loadingMode="eager"
+                priority="high"
                 src={items[safeIndex].src}
                 srcEditLabel={`l'image ${safeIndex + 1} de la galerie`}
                 srcEditPath={sectionPath(sectionIndex, "items", safeIndex, "src")}
@@ -1152,6 +1238,8 @@ export function GallerySection({
                   <GalleryImageFrame
                     alt={item.alt}
                     height={index % 2 === 0 ? 260 : 340}
+                    loadingMode="eager"
+                    priority={index < 3 ? "high" : "auto"}
                     src={item.src}
                     srcEditLabel={`l'image ${index + 1} de la galerie`}
                     srcEditPath={sectionPath(sectionIndex, "items", index, "src")}
@@ -1166,6 +1254,8 @@ export function GallerySection({
                   alt={item.alt}
                   height={380}
                   key={`${item.alt}-${index}`}
+                  loadingMode="eager"
+                  priority={index < 3 ? "high" : "auto"}
                   src={item.src}
                   srcEditLabel={`l'image ${index + 1} de la galerie`}
                   srcEditPath={sectionPath(sectionIndex, "items", index, "src")}
@@ -1177,6 +1267,8 @@ export function GallerySection({
               <GalleryImageFrame
                 alt={items[0].alt}
                 height={420}
+                loadingMode="eager"
+                priority="high"
                 src={items[0].src}
                 srcEditLabel="l'image principale de la galerie"
                 srcEditPath={sectionPath(sectionIndex, "items", 0, "src")}
@@ -1187,6 +1279,8 @@ export function GallerySection({
                     alt={item.alt}
                     height={220}
                     key={`${item.alt}-${index}`}
+                    loadingMode="eager"
+                    priority="high"
                     src={item.src}
                     srcEditLabel={`l'image ${index + 2} de la galerie`}
                     srcEditPath={sectionPath(sectionIndex, "items", index + 1, "src")}
@@ -1201,6 +1295,8 @@ export function GallerySection({
                   alt={item.alt}
                   height={300}
                   key={`${item.alt}-${index}`}
+                  loadingMode="eager"
+                  priority={index < 3 ? "high" : "auto"}
                   src={item.src}
                   srcEditLabel={`l'image ${index + 1} de la galerie`}
                   srcEditPath={sectionPath(sectionIndex, "items", index, "src")}

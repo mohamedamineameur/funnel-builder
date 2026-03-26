@@ -25,7 +25,12 @@ interface RuntimePageLocalization {
 }
 
 function isLocaleLikeKey(value: string) {
-  return value === "default" || /^[a-z]{2,3}([_-][a-zA-Z]{2,4})?$/.test(value.trim());
+  const normalized = value.trim().toLowerCase();
+  if (["src", "alt", "url"].includes(normalized)) {
+    return false;
+  }
+
+  return normalized === "default" || /^[a-z]{2,3}([_-][a-zA-Z]{2,4})?$/.test(normalized);
 }
 
 function isLocalizedTextRecord(value: unknown): value is Record<string, string> {
@@ -90,6 +95,30 @@ function inferDirection(locale: string, fallbackDirection?: "ltr" | "rtl", fallb
   return ["ar", "fa", "he", "ur"].includes(locale.toLowerCase().split("-")[0]) ? "rtl" : "ltr";
 }
 
+function collectImageSources(value: unknown): string[] {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectImageSources(item));
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return Object.entries(value).flatMap(([key, nestedValue]) => {
+      if (key === "src" && typeof nestedValue === "string") {
+        const trimmed = nestedValue.trim();
+        return trimmed ? [trimmed] : [];
+      }
+
+      return collectImageSources(nestedValue);
+    });
+  }
+
+  return [];
+}
+
 export function RuntimePageShell({
   page,
   style,
@@ -142,6 +171,10 @@ export function RuntimePageShell({
   const resolvedSections = useMemo(
     () => resolveLocalizedValue(draftPage.sections, activeLocale, supportedLocales) as PageSection[],
     [activeLocale, draftPage.sections, supportedLocales],
+  );
+  const imageOptions = useMemo(
+    () => Array.from(new Set(collectImageSources(draftPage.sections))),
+    [draftPage.sections],
   );
   const hasNavbar = useMemo(
     () => resolvedSections.some((section) => section.type === "navbar"),
@@ -226,11 +259,13 @@ export function RuntimePageShell({
         if (!activeField) return;
         await saveField(activeField.path, nextValue);
       },
+      uploadImage: undefined,
       isSaving,
       saveError,
       lastSavedAt,
+      imageOptions,
     }),
-    [activeField, editMode, editable, isSaving, lastSavedAt, saveError, saveField],
+    [activeField, editMode, editable, imageOptions, isSaving, lastSavedAt, saveError, saveField],
   );
 
   useEffect(() => {

@@ -65,6 +65,61 @@ function isDarkColor(value: string) {
   return luminance < 0.5;
 }
 
+function normalizeCornerStyle(value: unknown): ThemeConstraint["cornerStyle"] | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  const compact = normalized
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (
+    compact === "sharp" ||
+    compact.includes("sharp") ||
+    compact.includes("square") ||
+    compact.includes("net") ||
+    compact.includes("carre") ||
+    compact.includes("angle droit") ||
+    compact.includes("angles droits") ||
+    compact.includes("pas arrondi") ||
+    compact.includes("non arrondi") ||
+    compact.includes("not rounded") ||
+    compact.includes("no rounded") ||
+    compact.includes("straight corner") ||
+    compact.includes("straight corners")
+  ) {
+    return "sharp";
+  }
+
+  if (
+    compact === "balanced" ||
+    compact.includes("balanced") ||
+    compact.includes("equilibre") ||
+    compact.includes("equilibree") ||
+    compact.includes("standard") ||
+    compact.includes("normal")
+  ) {
+    return "balanced";
+  }
+
+  if (
+    compact === "rounded" ||
+    compact.includes("rounded") ||
+    compact.includes("round") ||
+    compact.includes("arrondi") ||
+    compact.includes("souple") ||
+    compact.includes("soft")
+  ) {
+    return "rounded";
+  }
+
+  return undefined;
+}
+
 export function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
   if (!isObject(value) || !isObject(value.palette)) {
     return null;
@@ -85,10 +140,7 @@ export function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null 
 
   return {
     name: typeof value.name === "string" ? value.name.trim().slice(0, 80) : undefined,
-    cornerStyle:
-      value.cornerStyle === "sharp" || value.cornerStyle === "balanced" || value.cornerStyle === "rounded"
-        ? value.cornerStyle
-        : undefined,
+    cornerStyle: normalizeCornerStyle(value.cornerStyle),
     palette: {
       primary,
       secondary,
@@ -201,4 +253,64 @@ export function applyLocalizationConstraint(page: PagePayload, localizationConst
   }
 
   return validation.data;
+}
+
+export function buildPromptWithConstraints(
+  prompt: string,
+  themeConstraint: ThemeConstraint | null,
+  localizationConstraint: LocalizationConstraint | null,
+) {
+  const instructions: string[] = [];
+
+  if (themeConstraint) {
+    instructions.push(
+      [
+        "Respecte strictement cette direction artistique.",
+        `Palette imposee: primary ${themeConstraint.palette.primary}, secondary ${themeConstraint.palette.secondary}, background ${themeConstraint.palette.background}, textPrimary ${themeConstraint.palette.textPrimary}, textSecondary ${themeConstraint.palette.textSecondary}, accent ${themeConstraint.palette.accent}, muted ${themeConstraint.palette.muted}.`,
+        themeConstraint.cornerStyle
+          ? `Style des coins impose: ${themeConstraint.cornerStyle}.`
+          : "",
+        themeConstraint.name ? `Nom du theme: ${themeConstraint.name}.` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+  }
+
+  if (localizationConstraint) {
+    const primaryLocale = localizationConstraint.locale ?? localizationConstraint.supportedLocales?.[0];
+    const supportedLocales = localizationConstraint.supportedLocales ?? (primaryLocale ? [primaryLocale] : []);
+    const localeList = supportedLocales.join(", ");
+    const isMultilingual =
+      localizationConstraint.translationsEnabled || supportedLocales.length > 1;
+
+    instructions.push(
+      [
+        "Respecte strictement cette contrainte de langue.",
+        primaryLocale ? `Langue principale: ${primaryLocale}.` : "",
+        localizationConstraint.direction ? `Direction: ${localizationConstraint.direction}.` : "",
+        localizationConstraint.isRTL ? "La page doit etre en RTL." : "",
+        isMultilingual && localeList
+          ? `La page doit etre vraiment multilingue avec ces langues: ${localeList}.`
+          : "",
+        isMultilingual
+          ? "Pour les principaux textes visibles, utilise un format localise du type { fr: \"...\", en: \"...\" } au lieu d'un simple texte."
+          : "",
+        isMultilingual
+          ? "Ne te contente pas d'ajouter localization: le contenu lui-meme doit contenir plusieurs langues coherentes."
+          : "",
+        localizationConstraint.translationContext
+          ? `Contexte de traduction: ${localizationConstraint.translationContext}.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+  }
+
+  if (instructions.length === 0) {
+    return prompt;
+  }
+
+  return `${prompt}\n\nContraintes supplementaires:\n- ${instructions.join("\n- ")}`;
 }

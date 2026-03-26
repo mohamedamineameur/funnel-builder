@@ -199,6 +199,65 @@ function isDarkColor(value: string) {
   return luminance < 0.5;
 }
 
+function normalizeCornerStyle(value: unknown): PageTheme["cornerStyle"] | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  const compact = normalized
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (!compact) {
+    return undefined;
+  }
+
+  if (
+    compact === "sharp" ||
+    compact.includes("sharp") ||
+    compact.includes("square") ||
+    compact.includes("net") ||
+    compact.includes("carre") ||
+    compact.includes("angle droit") ||
+    compact.includes("angles droits") ||
+    compact.includes("pas arrondi") ||
+    compact.includes("non arrondi") ||
+    compact.includes("not rounded") ||
+    compact.includes("no rounded") ||
+    compact.includes("straight corner") ||
+    compact.includes("straight corners")
+  ) {
+    return "sharp";
+  }
+
+  if (
+    compact === "balanced" ||
+    compact.includes("balanced") ||
+    compact.includes("equilibre") ||
+    compact.includes("equilibree") ||
+    compact.includes("standard") ||
+    compact.includes("normal")
+  ) {
+    return "balanced";
+  }
+
+  if (
+    compact === "rounded" ||
+    compact.includes("rounded") ||
+    compact.includes("round") ||
+    compact.includes("arrondi") ||
+    compact.includes("souple") ||
+    compact.includes("soft")
+  ) {
+    return "rounded";
+  }
+
+  return undefined;
+}
+
 function getBenefitsAnchorId(title: unknown) {
   const titleText = resolveTextPreview(title).toLowerCase();
   return titleText && titleText.includes("creation")
@@ -810,6 +869,7 @@ export function normalizePagePayloadForRuntime(value: unknown): unknown {
     const theme = { ...value.theme } as Record<string, unknown>;
     const palette =
       isObject(theme.palette) ? { ...theme.palette } : isObject(theme.colors) ? { ...theme.colors } : null;
+    const normalizedCornerStyle = normalizeCornerStyle(theme.cornerStyle);
 
     if (palette) {
       const primary = isColorString(palette.primary) ? palette.primary : undefined;
@@ -863,6 +923,10 @@ export function normalizePagePayloadForRuntime(value: unknown): unknown {
       if (!isColorString(theme.warningColor)) {
         theme.warningColor = "#d97706";
       }
+    }
+
+    if (normalizedCornerStyle) {
+      theme.cornerStyle = normalizedCornerStyle;
     }
 
     delete theme.colors;

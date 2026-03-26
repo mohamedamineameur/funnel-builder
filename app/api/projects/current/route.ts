@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { isRecord, readUuid } from "@/lib/api-utils";
-import { getModels, syncDatabase } from "@/lib/models";
+import { syncDatabase } from "@/lib/models";
+import { findOwnedProject } from "@/lib/ownership";
 import { CURRENT_PROJECT_COOKIE_NAME } from "@/lib/project-selection";
-import { runAsUser } from "@/lib/rls";
 
 export const runtime = "nodejs";
 
@@ -28,11 +28,7 @@ export async function POST(request: Request) {
     }
 
     await syncDatabase();
-    const { Project } = getModels();
-
-    const project = await runAsUser(auth.user.userId, async (transaction) => {
-      return Project.findByPk(projectId, { transaction });
-    });
+    const project = await findOwnedProject(auth.user.userId, projectId);
 
     if (!project) {
       return NextResponse.json({ error: "Projet introuvable." }, { status: 404 });

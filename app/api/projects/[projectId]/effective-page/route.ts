@@ -34,11 +34,13 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({
       project: page.project,
       page: page.effectivePage,
-      pageMeta: {
-        id: page.effectivePageRecord.id,
-        isEffective: page.effectivePageRecord.isEffective,
-        createdAt: page.effectivePageRecord.createdAt,
-      },
+      pageMeta: page.effectivePageRecord
+        ? {
+            id: page.effectivePageRecord.id,
+            isEffective: page.effectivePageRecord.isEffective,
+            createdAt: page.effectivePageRecord.createdAt,
+          }
+        : null,
     });
   } catch (error) {
     return jsonServerError(error, "Impossible de charger la page effective.");

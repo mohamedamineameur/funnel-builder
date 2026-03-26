@@ -32,10 +32,21 @@ export class Page extends Model<InferAttributes<Page>, InferCreationAttributes<P
   declare createdAt: CreationOptional<Date>;
 }
 
+export class Photo extends Model<InferAttributes<Photo>, InferCreationAttributes<Photo>> {
+  declare id: CreationOptional<string>;
+  declare userId: string;
+  declare alt: CreationOptional<string | null>;
+  declare descrip: CreationOptional<string | null>;
+  declare link: string;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+
 type DbModels = {
   User: typeof User;
   Project: typeof Project;
   Page: typeof Page;
+  Photo: typeof Photo;
 };
 
 const globalForModels = globalThis as typeof globalThis & {
@@ -173,6 +184,56 @@ function initializeModels() {
     },
   );
 
+  Photo.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        primaryKey: true,
+        defaultValue: literal("gen_random_uuid()"),
+      },
+      userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        field: "user_id",
+      },
+      alt: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      descrip: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      link: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notEmpty: true,
+        },
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: literal("NOW()"),
+        field: "created_at",
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: literal("NOW()"),
+        field: "updated_at",
+      },
+    },
+    {
+      sequelize,
+      modelName: "Photo",
+      tableName: "photos",
+      timestamps: true,
+      underscored: true,
+    },
+  );
+
   User.hasMany(Project, {
     foreignKey: "userId",
     as: "projects",
@@ -189,11 +250,20 @@ function initializeModels() {
     foreignKey: "projectId",
     as: "project",
   });
+  User.hasMany(Photo, {
+    foreignKey: "userId",
+    as: "photos",
+  });
+  Photo.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
 
   globalForModels.__dbModels__ = {
     User,
     Project,
     Page,
+    Photo,
   };
 
   return globalForModels.__dbModels__;
@@ -212,91 +282,6 @@ export async function syncDatabase() {
 
       await sequelize.query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
       await sequelize.sync();
-      await sequelize.query(`
-        ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE projects FORCE ROW LEVEL SECURITY;
-        DROP POLICY IF EXISTS projects_select_own ON projects;
-        DROP POLICY IF EXISTS projects_insert_own ON projects;
-        DROP POLICY IF EXISTS projects_update_own ON projects;
-        DROP POLICY IF EXISTS projects_delete_own ON projects;
-        CREATE POLICY projects_select_own
-          ON projects
-          FOR SELECT
-          USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
-        CREATE POLICY projects_insert_own
-          ON projects
-          FOR INSERT
-          WITH CHECK (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
-        CREATE POLICY projects_update_own
-          ON projects
-          FOR UPDATE
-          USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)
-          WITH CHECK (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
-        CREATE POLICY projects_delete_own
-          ON projects
-          FOR DELETE
-          USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid);
-      `);
-      await sequelize.query(`
-        ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
-        ALTER TABLE pages FORCE ROW LEVEL SECURITY;
-        DROP POLICY IF EXISTS pages_select_own ON pages;
-        DROP POLICY IF EXISTS pages_insert_own ON pages;
-        DROP POLICY IF EXISTS pages_update_own ON pages;
-        DROP POLICY IF EXISTS pages_delete_own ON pages;
-        CREATE POLICY pages_select_own
-          ON pages
-          FOR SELECT
-          USING (
-            EXISTS (
-              SELECT 1
-              FROM projects
-              WHERE projects.id = pages.project_id
-                AND projects.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-            )
-          );
-        CREATE POLICY pages_insert_own
-          ON pages
-          FOR INSERT
-          WITH CHECK (
-            EXISTS (
-              SELECT 1
-              FROM projects
-              WHERE projects.id = pages.project_id
-                AND projects.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-            )
-          );
-        CREATE POLICY pages_update_own
-          ON pages
-          FOR UPDATE
-          USING (
-            EXISTS (
-              SELECT 1
-              FROM projects
-              WHERE projects.id = pages.project_id
-                AND projects.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-            )
-          )
-          WITH CHECK (
-            EXISTS (
-              SELECT 1
-              FROM projects
-              WHERE projects.id = pages.project_id
-                AND projects.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-            )
-          );
-        CREATE POLICY pages_delete_own
-          ON pages
-          FOR DELETE
-          USING (
-            EXISTS (
-              SELECT 1
-              FROM projects
-              WHERE projects.id = pages.project_id
-                AND projects.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-            )
-          );
-      `);
 
       return models;
     })().catch((error) => {

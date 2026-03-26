@@ -23,11 +23,13 @@ export async function GET() {
       projects: workspace.projects,
       currentProject: workspace.currentProject,
       effectivePage: workspace.effectivePage,
-      effectivePageMeta: {
-        id: workspace.effectivePageRecord.id,
-        isEffective: workspace.effectivePageRecord.isEffective,
-        createdAt: workspace.effectivePageRecord.createdAt,
-      },
+      effectivePageMeta: workspace.effectivePageRecord
+        ? {
+            id: workspace.effectivePageRecord.id,
+            isEffective: workspace.effectivePageRecord.isEffective,
+            createdAt: workspace.effectivePageRecord.createdAt,
+          }
+        : null,
     });
   } catch (error) {
     return jsonServerError(error, "Impossible de charger l'espace de travail.");

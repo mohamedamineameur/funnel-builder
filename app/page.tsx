@@ -1,10 +1,10 @@
-import { PageRuntimeView } from "@/components/page-runtime-view";
-import { loadRuntimePage } from "@/lib/load-runtime-page";
+import { redirect } from "next/navigation";
+import { getOptionalAuthenticatedUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const page = await loadRuntimePage();
+  const auth = await getOptionalAuthenticatedUser();
 
-  return <PageRuntimeView page={page} />;
+  redirect(auth.user ? "/dashboard" : "/auth");
 }

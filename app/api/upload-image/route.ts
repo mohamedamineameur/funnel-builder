@@ -1,20 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
+import { sanitizeBlobSegment, uploadBufferToBlobStorage } from "@/lib/blob-storage";
+import { getModels, syncDatabase } from "@/lib/models";
 
-const uploadDirectory = path.join(process.cwd(), "public", "generated");
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
-
-function sanitizeFileSegment(value: string) {
-  const normalized = value
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return normalized || "visuel";
-}
 
 function resolveExtension(fileName: string, mimeType: string) {
   const extensionFromName = path.extname(fileName).toLowerCase();
@@ -41,7 +31,11 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     const slugValue = formData.get("slug");
+    const altValue = formData.get("alt");
+    const descripValue = formData.get("descrip");
     const slug = typeof slugValue === "string" && slugValue.trim() ? slugValue.trim() : "page";
+    const alt = typeof altValue === "string" && altValue.trim() ? altValue.trim().slice(0, 255) : null;
+    const descrip = typeof descripValue === "string" && descripValue.trim() ? descripValue.trim().slice(0, 2000) : null;
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Aucun fichier image n'a ete envoye." }, { status: 400 });
@@ -60,13 +54,23 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const extension = resolveExtension(file.name, file.type);
-    const fileName = `${sanitizeFileSegment(slug)}-${Date.now()}${extension}`;
-
-    await mkdir(uploadDirectory, { recursive: true });
-    await writeFile(path.join(uploadDirectory, fileName), buffer);
+    const fileName = `${sanitizeBlobSegment(slug)}-${Date.now()}${extension}`;
+    const src = await uploadBufferToBlobStorage({
+      buffer,
+      blobName: fileName,
+      contentType: file.type || `image/${extension.replace(".", "")}`,
+    });
+    await syncDatabase();
+    const { Photo } = getModels();
+    await Photo.create({
+      userId: auth.user.userId,
+      alt,
+      descrip,
+      link: src,
+    });
 
     return NextResponse.json({
-      src: `/generated/${fileName}`,
+      src,
     });
   } catch (error) {
     return NextResponse.json(

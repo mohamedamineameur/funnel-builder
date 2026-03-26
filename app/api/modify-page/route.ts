@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
-import { modifyPageJsonWithOpenAI } from "@/lib/openai-page-generator";
+import { modifyPageWithImage } from "@/lib/openai-page-generator";
 import {
   applyLocalizationConstraint,
   applyThemeConstraint,
+  buildPromptWithConstraints,
   sanitizeLocalizationConstraint,
   sanitizePromptInput,
   sanitizeThemeConstraint,
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
 
     const currentWorkspace = !body.page ? await getCurrentWorkspacePage(auth.user.userId) : null;
     const sourcePage = body.page ?? currentWorkspace?.effectivePage;
+
+    if (!sourcePage) {
+      return NextResponse.json(
+        { error: "Aucune page de depart disponible. Cree ou genere d'abord une premiere page." },
+        { status: 400 },
+      );
+    }
+
     const normalizedSourcePage = normalizePagePayloadForRuntime(sourcePage);
     const sourceValidation = validatePagePayload(normalizedSourcePage);
 
@@ -48,14 +57,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await modifyPageJsonWithOpenAI(sourceValidation.data as PagePayload, prompt);
+    const constrainedPrompt = buildPromptWithConstraints(prompt, themeConstraint, localizationConstraint);
+    const result = await modifyPageWithImage(sourceValidation.data as PagePayload, constrainedPrompt, auth.user.userId);
     const themedPage = applyThemeConstraint(result.page, themeConstraint);
     const finalPage = applyLocalizationConstraint(themedPage, localizationConstraint);
     const shouldSave = body.save !== false;
+    let createdVersionId: string | null = null;
 
     if (shouldSave) {
       const workspace = currentWorkspace ?? await getCurrentWorkspacePage(auth.user.userId);
-      await createPageVersionForProject(auth.user.userId, workspace.currentProject.id, finalPage);
+
+      if (!workspace.currentProject) {
+        return NextResponse.json(
+          { error: "Aucun projet courant. Cree d'abord ton premier projet." },
+          { status: 400 },
+        );
+      }
+
+      const createdVersion = await createPageVersionForProject(
+        auth.user.userId,
+        workspace.currentProject.id,
+        finalPage,
+      );
+      createdVersionId = createdVersion?.pageRecord.id ?? null;
     }
 
     return NextResponse.json({
@@ -63,6 +87,7 @@ export async function POST(request: Request) {
       message: shouldSave
         ? "La page a ete modifiee puis sauvegardee."
         : "La page a ete modifiee.",
+      pageId: createdVersionId,
       page: finalPage,
       images: result.images,
       imageDisplay: result.imageDisplay,

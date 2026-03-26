@@ -3,7 +3,7 @@ import { AUTH_COOKIE_NAME } from "@/lib/auth-shared";
 import { verifyAuthToken } from "@/lib/jwt";
 
 const PROTECTED_API_PREFIXES = ["/api/projects", "/api/pages"];
-const PROTECTED_PAGE_PREFIXES = ["/projects", "/dashboard", "/prompt", "/edition"];
+const PROTECTED_PAGE_PREFIXES = ["/projects", "/dashboard", "/prompt", "/onboarding"];
 
 function isProtectedApiPath(pathname: string) {
   return PROTECTED_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -70,8 +70,8 @@ export const config = {
     "/api/projects/:path*",
     "/api/pages/:path*",
     "/dashboard/:path*",
+    "/onboarding/:path*",
     "/projects/:path*",
     "/prompt/:path*",
-    "/edition/:path*",
   ],
 };

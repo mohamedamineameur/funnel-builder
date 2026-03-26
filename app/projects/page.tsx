@@ -2,25 +2,32 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { WorkspacePageShell } from "@/components/workspace-page-shell";
 import { authorizedFetch } from "@/lib/client-api";
+import { formatProjectNameInput, normalizeProjectName } from "@/lib/project-name";
 
 function cx(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
 export default function ProjectsPage() {
-  const { currentProject, loading, projects, refreshWorkspace, selectProject } = useAuth();
+  const { currentProject, loading, projects, selectProject } = useAuth();
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const sortedProjects = useMemo(() => [...projects], [projects]);
 
+  useEffect(() => {
+    if (!loading && projects.length === 0) {
+      router.replace("/onboarding");
+    }
+  }, [loading, projects.length, router]);
+
   async function createProject() {
-    const name = newProjectName.trim();
+    const name = normalizeProjectName(newProjectName);
 
     if (!name) {
       setError("Le nom du projet est requis.");
@@ -45,9 +52,8 @@ export default function ProjectsPage() {
       }
 
       await selectProject(payload.id);
-      await refreshWorkspace();
       setNewProjectName("");
-      router.push(`/projects/${payload.id}`);
+      router.replace(`/projects/${payload.id}/start`);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : "Impossible de creer le projet.");
     } finally {
@@ -87,7 +93,7 @@ export default function ProjectsPage() {
                     key={project.id}
                     onClick={async () => {
                       await selectProject(project.id);
-                      router.push(`/projects/${project.id}`);
+                      router.push(`/projects/${project.id}/start`);
                     }}
                     type="button"
                   >
@@ -126,8 +132,8 @@ export default function ProjectsPage() {
               <div className="mt-4 grid gap-3">
                 <input
                   className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                  onChange={(event) => setNewProjectName(event.target.value)}
-                  placeholder="Ex: Funnel Ramadan, Landing SaaS, Projet client"
+                  onChange={(event) => setNewProjectName(formatProjectNameInput(event.target.value))}
+                  placeholder="Ex: funnel-ramadan-landing-saas"
                   value={newProjectName}
                 />
                 {error ? (

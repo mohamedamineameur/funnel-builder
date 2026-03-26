@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { generatePageWithImage } from "@/lib/openai-page-generator";
+import { buildPromptWithConstraints } from "@/lib/page-generation-constraints";
 import { normalizePagePayloadForRuntime, validatePagePayload, type PagePayload } from "@/lib/page-dsl";
 import { createPageVersionForProject, getCurrentWorkspacePage } from "@/lib/workspace";
 
@@ -71,6 +72,61 @@ function isDarkColor(value: string) {
   return luminance < 0.5;
 }
 
+function normalizeCornerStyle(value: unknown): ThemeConstraint["cornerStyle"] | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  const compact = normalized
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (
+    compact === "sharp" ||
+    compact.includes("sharp") ||
+    compact.includes("square") ||
+    compact.includes("net") ||
+    compact.includes("carre") ||
+    compact.includes("angle droit") ||
+    compact.includes("angles droits") ||
+    compact.includes("pas arrondi") ||
+    compact.includes("non arrondi") ||
+    compact.includes("not rounded") ||
+    compact.includes("no rounded") ||
+    compact.includes("straight corner") ||
+    compact.includes("straight corners")
+  ) {
+    return "sharp";
+  }
+
+  if (
+    compact === "balanced" ||
+    compact.includes("balanced") ||
+    compact.includes("equilibre") ||
+    compact.includes("equilibree") ||
+    compact.includes("standard") ||
+    compact.includes("normal")
+  ) {
+    return "balanced";
+  }
+
+  if (
+    compact === "rounded" ||
+    compact.includes("rounded") ||
+    compact.includes("round") ||
+    compact.includes("arrondi") ||
+    compact.includes("souple") ||
+    compact.includes("soft")
+  ) {
+    return "rounded";
+  }
+
+  return undefined;
+}
+
 function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
   if (!isObject(value) || !isObject(value.palette)) {
     return null;
@@ -91,10 +147,7 @@ function sanitizeThemeConstraint(value: unknown): ThemeConstraint | null {
 
   return {
     name: typeof value.name === "string" ? value.name.trim().slice(0, 80) : undefined,
-    cornerStyle:
-      value.cornerStyle === "sharp" || value.cornerStyle === "balanced" || value.cornerStyle === "rounded"
-        ? value.cornerStyle
-        : undefined,
+    cornerStyle: normalizeCornerStyle(value.cornerStyle),
     palette: {
       primary,
       secondary,
@@ -233,15 +286,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await generatePageWithImage(prompt);
+    const constrainedPrompt = buildPromptWithConstraints(prompt, themeConstraint, localizationConstraint);
+    const result = await generatePageWithImage(constrainedPrompt, auth.user.userId);
     const themedPage = applyThemeConstraint(result.page, themeConstraint);
     const page = applyLocalizationConstraint(themedPage, localizationConstraint);
     const workspace = await getCurrentWorkspacePage(auth.user.userId);
-    await createPageVersionForProject(auth.user.userId, workspace.currentProject.id, page);
+
+    if (!workspace.currentProject) {
+      return NextResponse.json({ error: "Aucun projet courant. Cree d'abord ton premier projet." }, { status: 400 });
+    }
+
+    const createdVersion = await createPageVersionForProject(auth.user.userId, workspace.currentProject.id, page);
 
     return NextResponse.json({
       success: true,
       message: "La page et son image ont ete generees puis sauvegardees dans ton projet.",
+      pageId: createdVersion?.pageRecord.id,
       page,
       images: result.images,
       imageDisplay: result.imageDisplay,

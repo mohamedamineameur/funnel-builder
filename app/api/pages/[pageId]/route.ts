@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { deepMergeJson, isRecord, isUuid, jsonError, sanitizePayload } from "@/lib/api-utils";
 import { getModels, syncDatabase } from "@/lib/models";
-import { runAsUser } from "@/lib/rls";
+import { findOwnedPage } from "@/lib/ownership";
+import { getSequelize } from "@/lib/sequelize";
 
 export const runtime = "nodejs";
 
@@ -27,11 +28,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     await syncDatabase();
-    const { Page } = getModels();
-
-    const page = await runAsUser(auth.user.userId, async (transaction) => {
-      return Page.findByPk(pageId, { transaction });
-    });
+    const page = await findOwnedPage(auth.user.userId, pageId);
 
     if (!page) {
       return jsonError("Page introuvable.", 404);
@@ -71,9 +68,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     await syncDatabase();
     const { Page } = getModels();
-
-    const nextPage = await runAsUser(auth.user.userId, async (transaction) => {
-      const currentPage = await Page.findByPk(pageId, { transaction });
+    const nextPage = await getSequelize().transaction(async (transaction) => {
+      const currentPage = await findOwnedPage(auth.user.userId, pageId, { transaction });
 
       if (!currentPage) {
         return null;

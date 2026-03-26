@@ -36,6 +36,20 @@ function getPageTitle(page: ProjectPageRecord) {
   return "Page sans titre";
 }
 
+function toProjectSlug(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function ProjectPagesPage() {
   const params = useParams<{ projectId: string }>();
   const router = useRouter();
@@ -61,7 +75,14 @@ export default function ProjectPagesPage() {
           throw new Error(payload.error ?? "Impossible de charger les pages du projet.");
         }
 
-        setPages(Array.isArray(payload) ? payload : []);
+        const nextPages = Array.isArray(payload) ? payload : [];
+
+        if (nextPages.length === 0) {
+          router.replace(`/projects/${params.projectId}/start`);
+          return;
+        }
+
+        setPages(nextPages);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Impossible de charger les pages du projet.");
       } finally {
@@ -70,9 +91,12 @@ export default function ProjectPagesPage() {
     }
 
     void loadPages();
-  }, [params.projectId, selectProject]);
+  }, [params.projectId, router, selectProject]);
 
   const project = projects.find((item) => item.id === params.projectId) ?? currentProject;
+  const currentProjectViewHref = toProjectSlug(project?.name ?? null)
+    ? `/view/${toProjectSlug(project?.name ?? null)}`
+    : null;
 
   return (
     <WorkspacePageShell>
@@ -133,29 +157,46 @@ export default function ProjectPagesPage() {
                         </p>
                       </div>
                       {!page.isEffective ? (
-                        <button
-                          className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white"
-                          onClick={async () => {
-                            const response = await authorizedFetch(`/api/pages/${page.id}/effective`, {
-                              method: "POST",
-                            });
-                            const payload = (await response.json()) as { error?: string };
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white"
+                            href={`/view/${page.id}`}
+                            target="_blank"
+                          >
+                            Voir la page
+                          </Link>
+                          <button
+                            className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white"
+                            onClick={async () => {
+                              const response = await authorizedFetch(`/api/pages/${page.id}/effective`, {
+                                method: "POST",
+                              });
+                              const payload = (await response.json()) as { error?: string };
 
-                            if (!response.ok) {
-                              setError(payload.error ?? "Impossible de rendre cette page effective.");
-                              return;
-                            }
+                              if (!response.ok) {
+                                setError(payload.error ?? "Impossible de rendre cette page effective.");
+                                return;
+                              }
 
-                            router.refresh();
-                            const pagesResponse = await authorizedFetch(`/api/projects/${params.projectId}/pages`);
-                            const nextPages = (await pagesResponse.json()) as ProjectPageRecord[];
-                            setPages(Array.isArray(nextPages) ? nextPages : []);
-                          }}
-                          type="button"
+                              router.refresh();
+                              const pagesResponse = await authorizedFetch(`/api/projects/${params.projectId}/pages`);
+                              const nextPages = (await pagesResponse.json()) as ProjectPageRecord[];
+                              setPages(Array.isArray(nextPages) ? nextPages : []);
+                            }}
+                            type="button"
+                          >
+                            Rendre effective
+                          </button>
+                        </div>
+                      ) : (
+                        <Link
+                          className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                          href={currentProjectViewHref ?? `/view/${page.id}`}
+                          target="_blank"
                         >
-                          Rendre effective
-                        </button>
-                      ) : null}
+                          Voir la page
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))
@@ -178,12 +219,6 @@ export default function ProjectPagesPage() {
                   href="/prompt"
                 >
                   Generer une nouvelle page
-                </Link>
-                <Link
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-slate-950 bg-slate-950 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5"
-                  href="/edition"
-                >
-                  Ouvrir l'edition inline
                 </Link>
               </div>
             </div>

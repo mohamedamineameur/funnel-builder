@@ -11,8 +11,8 @@ OPENAI_IMAGE_MODEL=gpt-image-1
 La route `POST /api/generate-page`:
 
 - utilise `OPENAI_API_KEY` cote serveur
-- genere la page JSON
+- genere la page
 - genere une image marketing avec `gpt-image-1`
 - sauvegarde l'image dans `public/generated`
-- injecte son chemin dans la section prevue du JSON
-- ecrit ensuite le JSON final valide dans `data/page.json`
+- injecte son chemin dans la section prevue de la page
+- sauvegarde ensuite la nouvelle version dans le projet courant

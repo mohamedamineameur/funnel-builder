@@ -1,14 +1,14 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
-import type { Transaction } from "sequelize";
 import { type RuntimePagePayload } from "@/components/page-runtime-view";
+import { DEFAULT_RUNTIME_PAGE } from "@/lib/default-page";
 import { getModels, syncDatabase } from "@/lib/models";
+import {
+  findEffectiveOwnedPageForProject,
+  findOwnedProject,
+  listOwnedProjects,
+} from "@/lib/ownership";
 import { normalizePagePayloadForRuntime, validatePagePayload } from "@/lib/page-dsl";
-import { runAsUser } from "@/lib/rls";
-
-const pageFilePath = path.join(process.cwd(), "data", "page.json");
-const DEFAULT_PROJECT_NAME = "Projet principal";
+import { getSequelize } from "@/lib/sequelize";
 
 function normalizeStoredPagePayload(value: unknown) {
   return normalizePagePayloadForRuntime(value) as RuntimePagePayload;
@@ -34,40 +34,13 @@ export function jsonServerError(error: unknown, fallbackMessage: string) {
   );
 }
 
-export async function readFallbackRuntimePage() {
-  const source = await readFile(pageFilePath, "utf8");
-  return validateRuntimePagePayload(JSON.parse(source) as unknown);
-}
-
-async function ensureEffectivePageForProject(projectId: string, transaction: Transaction) {
-  const { Page } = getModels();
-  let effectivePage = await Page.findOne({
-    where: {
-      projectId,
-      isEffective: true,
-    },
-    order: [["createdAt", "DESC"]],
-    transaction,
-  });
-
-  if (!effectivePage) {
-    const seedPage = await readFallbackRuntimePage();
-    effectivePage = await Page.create(
-      {
-        projectId,
-        payload: seedPage,
-        isEffective: true,
-      },
-      { transaction },
-    );
-  }
-
-  return effectivePage;
+export function getDefaultRuntimePage() {
+  return validateRuntimePagePayload(DEFAULT_RUNTIME_PAGE);
 }
 
 export async function getWorkspaceForUser(userId: string, preferredProjectId?: string | null) {
   await syncDatabase();
-  const { Page, Project, User } = getModels();
+  const { User } = getModels();
 
   const user = await User.findByPk(userId);
 
@@ -75,37 +48,16 @@ export async function getWorkspaceForUser(userId: string, preferredProjectId?: s
     throw new Error("Utilisateur introuvable.");
   }
 
-  return runAsUser(userId, async (transaction) => {
-    let projects = await Project.findAll({
-      order: [["createdAt", "DESC"]],
-      transaction,
-    });
-
-    if (projects.length === 0) {
-      const seedPage = await readFallbackRuntimePage();
-      const project = await Project.create(
-        {
-          name: DEFAULT_PROJECT_NAME,
-          userId,
-        },
-        { transaction },
-      );
-
-      await Page.create(
-        {
-          projectId: project.id,
-          payload: seedPage,
-          isEffective: true,
-        },
-        { transaction },
-      );
-
-      projects = [project];
-    }
+  return getSequelize().transaction(async (transaction) => {
+    const projects = await listOwnedProjects(userId, { transaction });
 
     const currentProject =
-      (preferredProjectId ? projects.find((project) => project.id === preferredProjectId) : null) ?? projects[0];
-    const effectivePageRecord = await ensureEffectivePageForProject(currentProject.id, transaction);
+      (preferredProjectId ? projects.find((project) => project.id === preferredProjectId) : null) ??
+      projects[0] ??
+      null;
+    const effectivePageRecord = currentProject
+      ? await findEffectiveOwnedPageForProject(userId, currentProject.id, { transaction })
+      : null;
 
     return {
       user: {
@@ -116,28 +68,27 @@ export async function getWorkspaceForUser(userId: string, preferredProjectId?: s
       projects,
       currentProject,
       effectivePageRecord,
-      effectivePage: normalizeStoredPagePayload(effectivePageRecord.payload),
+      effectivePage: effectivePageRecord ? normalizeStoredPagePayload(effectivePageRecord.payload) : null,
     };
   });
 }
 
 export async function getEffectivePageForProject(userId: string, projectId: string) {
   await syncDatabase();
-  const { Project } = getModels();
 
-  return runAsUser(userId, async (transaction) => {
-    const project = await Project.findByPk(projectId, { transaction });
+  return getSequelize().transaction(async (transaction) => {
+    const project = await findOwnedProject(userId, projectId, { transaction });
 
     if (!project) {
       return null;
     }
 
-    const effectivePageRecord = await ensureEffectivePageForProject(project.id, transaction);
+    const effectivePageRecord = await findEffectiveOwnedPageForProject(userId, project.id, { transaction });
 
     return {
       project,
       effectivePageRecord,
-      effectivePage: normalizeStoredPagePayload(effectivePageRecord.payload),
+      effectivePage: effectivePageRecord ? normalizeStoredPagePayload(effectivePageRecord.payload) : null,
     };
   });
 }
@@ -160,10 +111,10 @@ export async function createPageVersionForProject(
   const normalizedPage = validateRuntimePagePayload(value);
 
   await syncDatabase();
-  const { Page, Project } = getModels();
+  const { Page } = getModels();
 
-  return runAsUser(userId, async (transaction) => {
-    const project = await Project.findByPk(projectId, { transaction });
+  return getSequelize().transaction(async (transaction) => {
+    const project = await findOwnedProject(userId, projectId, { transaction });
 
     if (!project) {
       return null;

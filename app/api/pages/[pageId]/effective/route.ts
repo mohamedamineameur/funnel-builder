@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { isUuid, jsonError } from "@/lib/api-utils";
 import { getModels, syncDatabase } from "@/lib/models";
-import { runAsUser } from "@/lib/rls";
+import { findOwnedPage } from "@/lib/ownership";
+import { getSequelize } from "@/lib/sequelize";
 
 export const runtime = "nodejs";
 
@@ -28,9 +29,8 @@ export async function POST(_request: Request, context: RouteContext) {
 
     await syncDatabase();
     const { Page } = getModels();
-
-    const effectivePage = await runAsUser(auth.user.userId, async (transaction) => {
-      const page = await Page.findByPk(pageId, { transaction });
+    const effectivePage = await getSequelize().transaction(async (transaction) => {
+      const page = await findOwnedPage(auth.user.userId, pageId, { transaction });
 
       if (!page) {
         return null;

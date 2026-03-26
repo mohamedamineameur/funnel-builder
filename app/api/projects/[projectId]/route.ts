@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { jsonError, isUuid, isRecord, sanitizeProjectName } from "@/lib/api-utils";
-import { getModels, syncDatabase } from "@/lib/models";
-import { runAsUser } from "@/lib/rls";
+import { syncDatabase } from "@/lib/models";
+import { findOwnedProject } from "@/lib/ownership";
 
 export const runtime = "nodejs";
 
@@ -27,11 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     await syncDatabase();
-    const { Project } = getModels();
-
-    const project = await runAsUser(auth.user.userId, async (transaction) => {
-      return Project.findByPk(projectId, { transaction });
-    });
+    const project = await findOwnedProject(auth.user.userId, projectId);
 
     if (!project) {
       return jsonError("Projet introuvable.", 404);
@@ -70,24 +66,14 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     await syncDatabase();
-    const { Project } = getModels();
-
-    const project = await runAsUser(auth.user.userId, async (transaction) => {
-      const ownedProject = await Project.findByPk(projectId, { transaction });
-
-      if (!ownedProject) {
-        return null;
-      }
-
-      ownedProject.name = name;
-      await ownedProject.save({ transaction });
-
-      return ownedProject;
-    });
+    const project = await findOwnedProject(auth.user.userId, projectId);
 
     if (!project) {
       return jsonError("Projet introuvable.", 404);
     }
+
+    project.name = name;
+    await project.save();
 
     return NextResponse.json(project);
   } catch (error) {

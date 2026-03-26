@@ -1,6 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
+import { sanitizeBlobSegment, uploadBufferToBlobStorage } from "@/lib/blob-storage";
+import { getModels, syncDatabase } from "@/lib/models";
 import {
   dslPromptSummary,
   normalizePagePayloadForRuntime,
@@ -453,15 +455,25 @@ function validateGeneratedBundle(value: unknown, userRequest: string): Generated
 }
 
 async function saveGeneratedImage(base64Image: string, slug: string) {
-  const outputDirectory = path.join(process.cwd(), "public", "generated");
-  await mkdir(outputDirectory, { recursive: true });
+  const fileName = `${sanitizeBlobSegment(slug)}-${Date.now()}.png`;
 
-  const fileName = `${slug}-${Date.now()}.png`;
-  const absolutePath = path.join(outputDirectory, fileName);
+  return uploadBufferToBlobStorage({
+    buffer: Buffer.from(base64Image, "base64"),
+    blobName: fileName,
+    contentType: "image/png",
+  });
+}
 
-  await writeFile(absolutePath, Buffer.from(base64Image, "base64"));
+async function createOwnedPhoto(userId: string, link: string, alt?: string, descrip?: string) {
+  await syncDatabase();
+  const { Photo } = getModels();
 
-  return `/generated/${fileName}`;
+  await Photo.create({
+    userId,
+    link,
+    alt: alt?.trim() ? alt.trim().slice(0, 255) : null,
+    descrip: descrip?.trim() ? descrip.trim().slice(0, 2000) : null,
+  });
 }
 
 function injectGeneratedImagesIntoPage(
@@ -664,6 +676,9 @@ Contraintes de sortie:
 - garder un ton coherent avec la demande
 - choisir un slug propre en kebab-case
 - toujours inclure theme avec une palette pensee specifiquement pour la demande
+- si l'utilisateur demande des coins nets, des angles droits, un style carre ou non arrondi, utilise EXACTEMENT "cornerStyle": "sharp"
+- si l'utilisateur demande quelque chose de doux ou arrondi, utilise EXACTEMENT "cornerStyle": "rounded"
+- sinon utilise "cornerStyle": "balanced"
 - si la demande parle de langue ou traduction, toujours inclure localization coherent avec la langue principale et le sens d'affichage
 - si la demande impose une langue, tous les textes visibles des sections doivent etre ecrits dans cette langue
 - si la demande impose l'arabe ou le RTL, la page doit etre en arabe avec direction rtl, isRTL true et une structure visuelle compatible
@@ -759,6 +774,9 @@ Contraintes de sortie:
 - garde la page actuelle comme base et ne change que ce qui est necessaire
 - preserve autant que possible les textes, sections et configurations deja valides
 - si la demande touche la langue ou le multilingue, applique les memes regles strictes que la creation
+- si la demande parle de coins nets, angles droits, style carre ou non arrondi, utilise EXACTEMENT "cornerStyle": "sharp"
+- si la demande parle de coins arrondis ou d'un rendu plus doux, utilise EXACTEMENT "cornerStyle": "rounded"
+- sinon garde ou utilise "cornerStyle": "balanced"
 - verification finale obligatoire:
 -   la page modifiee doit toujours respecter le DSL
 -   les textes visibles doivent rester coherents avec la langue declaree
@@ -873,9 +891,8 @@ IMPORTANT:
   }
 }
 
-export async function generatePageWithImage(userRequest: string): Promise<GeneratedPageBundle> {
+async function resolveGeneratedBundleWithImages(generatedBundle: GeneratedPageBundle, userId?: string) {
   const openai = getOpenAIClient();
-  const generatedBundle = await generatePageJsonWithOpenAI(userRequest);
   const generatedImages: Array<{ src: string; target?: "hero" | "image"; alt: string }> = [];
 
   for (let index = 0; index < generatedBundle.images.length; index += 1) {
@@ -896,6 +913,10 @@ export async function generatePageWithImage(userRequest: string): Promise<Genera
       imageBase64,
       `${generatedBundle.page.slug}-${index + 1}`,
     );
+
+    if (userId) {
+      await createOwnedPhoto(userId, imageSrc, imageSpec.alt, imageSpec.prompt);
+    }
 
     generatedImages.push({
       src: imageSrc,
@@ -919,4 +940,18 @@ export async function generatePageWithImage(userRequest: string): Promise<Genera
     ...generatedBundle,
     page: finalValidation.data,
   };
+}
+
+export async function generatePageWithImage(userRequest: string, userId?: string): Promise<GeneratedPageBundle> {
+  const generatedBundle = await generatePageJsonWithOpenAI(userRequest);
+  return resolveGeneratedBundleWithImages(generatedBundle, userId);
+}
+
+export async function modifyPageWithImage(
+  existingPage: PagePayload,
+  userRequest: string,
+  userId?: string,
+): Promise<GeneratedPageBundle> {
+  const generatedBundle = await modifyPageJsonWithOpenAI(existingPage, userRequest);
+  return resolveGeneratedBundleWithImages(generatedBundle, userId);
 }

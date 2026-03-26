@@ -1,23 +1,41 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { cookies, headers } from "next/headers";
-import { type RuntimePagePayload } from "@/components/page-runtime-view";
 import { CURRENT_PROJECT_COOKIE_NAME } from "@/lib/project-selection";
-import { getCurrentWorkspacePage } from "@/lib/workspace";
-import { normalizePagePayloadForRuntime } from "@/lib/page-dsl";
+import { getCurrentWorkspacePage, getDefaultRuntimePage, getWorkspaceForUser } from "@/lib/workspace";
 
-export async function loadRuntimePage() {
+async function getAuthenticatedWorkspaceContext() {
   const requestHeaders = await headers();
   const authenticatedUserId = requestHeaders.get("x-auth-user-id");
 
-  if (authenticatedUserId) {
-    const cookieStore = await cookies();
-    const preferredProjectId = cookieStore.get(CURRENT_PROJECT_COOKIE_NAME)?.value ?? null;
-    const workspacePage = await getCurrentWorkspacePage(authenticatedUserId, preferredProjectId);
-    return workspacePage.effectivePage;
+  if (!authenticatedUserId) {
+    return null;
   }
 
-  const source = await readFile(path.join(process.cwd(), "data", "page.json"), "utf8");
-  const pageDefinition = JSON.parse(source) as unknown;
-  return normalizePagePayloadForRuntime(pageDefinition) as RuntimePagePayload;
+  const cookieStore = await cookies();
+  const preferredProjectId = cookieStore.get(CURRENT_PROJECT_COOKIE_NAME)?.value ?? null;
+
+  return {
+    authenticatedUserId,
+    preferredProjectId,
+  };
+}
+
+export async function loadAuthenticatedWorkspace() {
+  const context = await getAuthenticatedWorkspaceContext();
+
+  if (!context) {
+    return null;
+  }
+
+  return getWorkspaceForUser(context.authenticatedUserId, context.preferredProjectId);
+}
+
+export async function loadRuntimePage() {
+  const context = await getAuthenticatedWorkspaceContext();
+
+  if (context) {
+    const workspacePage = await getCurrentWorkspacePage(context.authenticatedUserId, context.preferredProjectId);
+    return workspacePage.effectivePage ?? null;
+  }
+
+  return getDefaultRuntimePage();
 }
